@@ -10,33 +10,21 @@ const commentSchema=new mongoose.Schema({
         required:true
     },
     message:{
-     type:String,
-     required:true
+        type:String,
+        required:true
     },
     flagged:{
-    type:Boolean,
-    required:true
+        type:Boolean,
+        required:true
     } ,
     replies: {
-    type:Number,
-    required:true}
-    ,
+        type:Number,
+        required:true
+    },
     votes: {
-    type:Number,
-    required:true }
-
+        type:Number,
+        required:true 
+    }
 })
 
 module.exports=mongoose.model("Comment",commentSchema)
-
-/*
-Comment = {
-    comment_id: 098709870987,
-    posted_by: 234523452345,
-    replied_by: [098709870987, 098709870988],
-    message: "This song is cool",
-    flagged: false,
-    replies: 2,
-    votes: 1 
-}
-*/
