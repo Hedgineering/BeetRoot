@@ -65,10 +65,36 @@ try {
                     username: "admin",
                     firstName: "admin", 
                     lastName: "1", 
-                    password: "beetrootAdmin!", 
+                    password: "beetrootadmin!", 
                     email: "admin@beetroot.com", 
-                    status: "Normal", 
+                    status: "normal", 
                     roles: [admin._id] 
+                  },
+                ]);
+              });
+              const artistId = roleModel.findOne({ name: "Artist" }).then(async (artist) => {
+                await userModel.create([
+                  {
+                    username: "artist",
+                    firstName: "artist", 
+                    lastName: "1", 
+                    password: "beetrootartist!", 
+                    email: "artist@beetroot.com", 
+                    status: "normal", 
+                    roles: [artist._id] 
+                  },
+                ]);
+              });
+              const listenerId = roleModel.findOne({ name: "Listener" }).then(async (listener) => {
+                await userModel.create([
+                  {
+                    username: "listener",
+                    firstName: "listener", 
+                    lastName: "1", 
+                    password: "beetrootlistener!", 
+                    email: "listener@beetroot.com", 
+                    status: "normal", 
+                    roles: [listener._id] 
                   },
                 ]);
               });
@@ -78,8 +104,6 @@ try {
       }
     })
     .catch((error) => console.log(error));
-
-  // This has to be required after we seed data to the database, else it throws an error
 }
 catch (error) {
   console.log(error);
