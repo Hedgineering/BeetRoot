@@ -1,7 +1,10 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  roles: [mongoose.SchemaTypes.ObjectId],
+  roles: {
+    type: [mongoose.SchemaTypes.ObjectId],
+    // todo: 
+  },
   history: mongoose.SchemaTypes.ObjectId,
   username: {
     type: String,
@@ -27,7 +30,7 @@ const userSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    default: "User",
+    default: "Normal",
   },
 });
 
