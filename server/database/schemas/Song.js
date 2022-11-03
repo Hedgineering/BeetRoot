@@ -30,7 +30,7 @@ const songSchema = new mongoose.Schema({
     required: true,
   },
   published: {
-    type: mongoose.SchemaTypes.Date,
+    type: Date,
     default: () => Date.now(),
     required: true,
   },
