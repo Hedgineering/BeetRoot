@@ -18,6 +18,7 @@ console.log(`Server configured for port ${server_port}`);
 // ==========================
 // General Require Statements
 // ==========================
+const cors = require("cors");
 const express = require("express");
 const mongoose = require("mongoose");
 const {roleModel} = require("./database/schemas/Role");
@@ -25,6 +26,7 @@ const {userModel} = require("./database/schemas/User");
 const authController = require("./controllers/AuthController");
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 // Set up default mongoose connection
