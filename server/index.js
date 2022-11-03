@@ -6,6 +6,7 @@ const rootDir = path.resolve(__dirname, ".");
 const env = require("dotenv").config({ path: `${rootDir}/.env` }).parsed;
 
 if (!env) {
+  console.log(env);
   console.log("Environment variables file not found");
 }
 
@@ -18,9 +19,71 @@ console.log(`Server configured for port ${server_port}`);
 // General Require Statements
 // ==========================
 const express = require("express");
+const mongoose = require("mongoose");
+const {roleModel} = require("./database/schemas/Role");
+const {userModel} = require("./database/schemas/User");
 const authController = require("./controllers/AuthController");
 
 const app = express();
+app.use(express.json());
+
+// Set up default mongoose connection
+const mongoConnectionUri = env["MONGO_URI_TEST"] || "mongodb://localhost/beetroot";
+console.log(`Connecting to MongoDB at ${mongoConnectionUri}`);
+
+const conn = mongoose 
+  .connect(mongoConnectionUri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB Connected"))
+  .catch(error => console.log(error));
+
+const db = mongoose.connection;
+// Bind connection to error event (to get notification of connection errors)
+db.on("error", console.error.bind(console, "MongoDB connection error:"));
+
+try {
+  // TODO: Add Seed Data to Database
+  roleModel
+    .find({})
+    .then(async (roles) => {
+      if (roles.length === 0) {
+        console.log("No roles found in database. Adding roles to database.");
+        await roleModel.create([
+          { name: "Listener", clearanceLevel: 1 },
+          { name: "Artist", clearanceLevel: 1 },
+          { name: "Admin", clearanceLevel: 2 },
+        ]);
+
+        // Users have to be added after roles, as users have a reference to roles that's required in their schema
+        userModel
+          .find({})
+          .then(async (users) => {
+            if (users.length === 0) {
+              console.log("No users found in database. Adding users to database.");
+              const adminId = roleModel.findOne({ name: "Admin" }).then(async (admin) => {
+                await userModel.create([
+                  {
+                    username: "admin",
+                    firstName: "admin", 
+                    lastName: "1", 
+                    password: "beetrootAdmin!", 
+                    email: "admin@beetroot.com", 
+                    status: "Normal", 
+                    roles: [admin._id] 
+                  },
+                ]);
+              });
+            }
+          })
+          .catch((error) => console.log(error));
+      }
+    })
+    .catch((error) => console.log(error));
+
+  // This has to be required after we seed data to the database, else it throws an error
+}
+catch (error) {
+  console.log(error);
+}
 
 // =================================
 // Configure Express Endpoints Here
