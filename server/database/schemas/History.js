@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const historySchema = new mongoose.Schema({
-  user_id: {
+  userId: {
     type: mongoose.SchemaTypes.ObjectID,
     required: true,
   },
@@ -19,8 +19,10 @@ const historySchema = new mongoose.Schema({
         },
       },
     ],
-    required: true,
   },
 });
 
-module.exports = mongoose.model("History", historySchema);
+module.exports = {
+  historyModel: mongoose.model("History", historySchema),
+  historySchema,
+};
