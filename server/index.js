@@ -24,6 +24,7 @@ const mongoose = require("mongoose");
 const {roleModel} = require("./database/schemas/Role");
 const {userModel} = require("./database/schemas/User");
 const authController = require("./controllers/AuthController");
+const songCatalog = require ("./controllers/SongCatalog");
 
 const app = express();
 app.use(cors());
@@ -119,10 +120,13 @@ catch (error) {
 app.post("/register", authController.register);
 app.post("/login", authController.login);
 
+
 // GET for root directory (default)
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
+app.get("/browse", songCatalog.songCatalog);
+
 
 // This comes at the end as this starts the server
 app.listen(server_port, () => {

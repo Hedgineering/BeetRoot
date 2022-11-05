@@ -1,38 +1,27 @@
 const mongoose = require("mongoose");
 const Song = require("../database/schemas/Song");
 const Genre = require("../database/schemas/Genre");
+const Artist = require("../database/schemas/Artist");
 const { artistModel } = require("./Artist");
 const { songModel } = require("./Song");
 const { genreModel } = require("./Genre");
 
-const songCatalog = Object.values(songModel); //Creates array of all songs in database
+const songCatalog = (req, res) => {
+  return [];
+};
 
 //Filter songCatalog by Genre
 const Filter = db.collection(songCatalog).find({
-  genereFilter: tags[''],
+  genreFilter: String,
   durationFilter: {
     $gt: Number,
-    $lt: Number, 
+    $lt: Number,
   },
-  artistFilter: tags[""],
+  artistFilter: String,
+  titleFilter: String,
 });
 
-//Sort songCatalog by Title
-db.collection(songCatalog).aggregate([
-  {
-    project: {
-      id: 0,
-      result: {
-        $sortArray: {
-          input: "$songCatalog",
-          sortBy: { title: 1, ref: songModel },
-        },
-      },
-    },
-  },
-]);
-
-//Sort songCatalog by Artist
+//Sort songCatalog
 db.collection(songCatalog).aggregate([
   {
     project: {
@@ -42,7 +31,9 @@ db.collection(songCatalog).aggregate([
           input: "$songCatalog",
           sortBy: {
             artist: 1,
+            ref: artistModel,
             genre: 1,
+            ref: genreModel,
             title: 1,
             duration: -1,
             license: 1,
@@ -59,4 +50,6 @@ db.collection(songCatalog).aggregate([
   },
 ]);
 
-module.exports = songCatalog; 
+module.exports = {
+  getAllSongs,
+};
