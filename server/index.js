@@ -24,6 +24,7 @@ const mongoose = require("mongoose");
 const {roleModel} = require("./database/schemas/Role");
 const {userModel} = require("./database/schemas/User");
 const authController = require("./controllers/AuthController");
+const songListingController = require("./controllers/SongListingController")
 
 const app = express();
 app.use(cors());
@@ -118,6 +119,9 @@ catch (error) {
 // POST for registration and login
 app.post("/register", authController.register);
 app.post("/login", authController.login);
+
+// POST for registration and login
+app.post("/catalog", songListingController.publish);
 
 // GET for root directory (default)
 app.get("/", (req, res) => {
