@@ -16,4 +16,7 @@ const purchasedSongSchema = new mongoose.Schema({
   tags: [mongoose.SchemaTypes.ObjectId],
 });
 
-module.exports = mongoose.model("PurchasedSong", purchasedSongSchema);
+module.exports = {
+  purchasedSongModel: mongoose.model("PurchasedSong", purchasedSongSchema),
+  purchasedSongSchema,
+};

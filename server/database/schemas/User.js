@@ -1,17 +1,26 @@
+const { roleModel } = require("./Role");
+const { historyModel } = require("./History");
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  roles: [mongoose.SchemaTypes.ObjectId],
-  history: mongoose.SchemaTypes.ObjectId,
+  roles: {
+    type: [mongoose.SchemaTypes.ObjectId],
+    ref: roleModel,
+    required: true,
+  },
+  history: {
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: historyModel,
+  },
   username: {
     type: String,
     required: true,
   },
-  first_name: {
+  firstName: {
     type: String,
     default: "",
   },
-  last_name: {
+  lastName: {
     type: String,
     default: "",
   },
@@ -27,8 +36,24 @@ const userSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    default: "User",
+    default: "Normal",
   },
 });
 
-module.exports = mongoose.model("User", userSchema);
+// This is a pre-save hook that will run before the user is saved to the database
+// It will ensure that a user has a history object associated with them
+userSchema.post("save", async function (doc, next) {
+  if(doc.history) {
+    next();
+    return;
+  }
+
+  const history = new historyModel({ userId: doc._id });
+  await history.save();
+  next();
+});
+
+module.exports = {
+  userModel: mongoose.model("User", userSchema),
+  userSchema,
+};
