@@ -12,13 +12,13 @@ const songCatalog = (req, res) => {
 
 //Filter songCatalog by Genre
 const Filter = db.collection(songCatalog).find({
-  genreFilter: String,
-  durationFilter: {
+  genre: [{String, ref: genreModel}],
+  duration: {
     $gt: Number,
     $lt: Number,
   },
-  artistFilter: String,
-  titleFilter: String,
+  artist: [{String, ref: artistModel}],
+  title: [{String, ref: songModel}],
 });
 
 //Sort songCatalog
