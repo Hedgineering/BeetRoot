@@ -120,7 +120,7 @@ catch (error) {
 app.post("/register", authController.register);
 app.post("/login", authController.login);
 
-// POST for registration and login
+// POST for publishing a song listingx
 app.post("/catalog", songListingController.publish);
 
 // GET for root directory (default)
