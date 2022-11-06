@@ -23,11 +23,15 @@ const express = require("express");
 const mongoose = require("mongoose");
 const {roleModel} = require("./database/schemas/Role");
 const {userModel} = require("./database/schemas/User");
+const {song} = require("./database/schemas/Song");
+const {readable} = require('stream');
 const authController = require("./controllers/AuthController");
+const audioController = require("./controllers/AudioController");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 
 // Set up default mongoose connection
 const mongoConnectionUri = env["MONGO_URI_TEST"] || "mongodb://localhost/beetroot";
@@ -118,6 +122,8 @@ catch (error) {
 // POST for registration and login
 app.post("/register", authController.register);
 app.post("/login", authController.login);
+app.post("/uploadSong", audioController.uploadSong);
+// No clue how to write one for get. Work on tomorrow.
 
 // GET for root directory (default)
 app.get("/", (req, res) => {
