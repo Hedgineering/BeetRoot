@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const {songModel} = require("./Song");
+const { songModel } = require("./Song");
 
 const formatSchema = new mongoose.Schema({
   song: {
@@ -27,5 +27,5 @@ const formatSchema = new mongoose.Schema({
 
 module.exports = {
   formatModel: mongoose.model("Format", formatSchema),
-  formatSchema
-}
+  formatSchema,
+};

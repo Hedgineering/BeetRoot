@@ -5,7 +5,7 @@ const songSchema = new mongoose.Schema({
   artist: {
     type: mongoose.SchemaTypes.ObjectId,
     required: true,
-    ref: artistModel
+    ref: artistModel,
   },
   genre: {
     type: mongoose.SchemaTypes.ObjectId,
@@ -64,4 +64,4 @@ const songSchema = new mongoose.Schema({
 module.exports = {
   songModel: mongoose.model("Song", songSchema),
   songSchema,
-}
+};

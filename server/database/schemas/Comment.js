@@ -5,12 +5,11 @@ const { listedSongModel } = require("./ListedSong");
 const commentSchema = new mongoose.Schema({
   parentComment: {
     type: mongoose.SchemaTypes.ObjectId,
-    ref: "Comment"
+    ref: "Comment",
   },
   listedSong: {
-    //type: mongoose.SchemaTypes.ObjectId,
-    type: String,
-    // ref: listedSongModel,
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: listedSongModel,
   },
   postedBy: {
     type: mongoose.SchemaTypes.ObjectId,

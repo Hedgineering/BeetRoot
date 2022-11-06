@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { userModel } = require("./User");
 const { songModel } = require("./Song");
-const { genreModel } = require("./Genre");
+const {genreModel} = require("./Genre")
 
 const artistSchema = new mongoose.Schema({
   user: {
@@ -16,11 +16,11 @@ const artistSchema = new mongoose.Schema({
   },
   songs: {
     type: [{ type: mongoose.SchemaTypes.ObjectId, ref: songModel }],
-    default: []
+    default: [],
   },
 });
 
 module.exports = {
   artistModel: mongoose.model("Artist", artistSchema),
-  artistSchema
+  artistSchema,
 };
