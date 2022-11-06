@@ -1,23 +1,24 @@
 const mongoose = require("mongoose");
 const { userModel } = require("./User");
-const { songModel } = require("./Song");
-const { genreModel } = require("./Genre");
 
 const artistSchema = new mongoose.Schema({
-  songs: {
-    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: songModel }],
-    required: true,
-  },
   user: {
-    type: mongoose.SchemaTypes.ObjectID,
+    type: mongoose.SchemaTypes.ObjectId,
     required: true,
     ref: userModel,
   },
   genre: {
-    type: mongoose.SchemaTypes.ObjectID,
+    type: mongoose.SchemaTypes.ObjectId,
     required: true,
-    ref: genreModel,
+    ref: "Genre",
+  },
+  songs: {
+    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: "Song" }],
+    default: [],
   },
 });
 
-module.exports = mongoose.model("Artist", artistSchema);
+module.exports = {
+  artistModel: mongoose.model("Artist", artistSchema),
+  artistSchema,
+};

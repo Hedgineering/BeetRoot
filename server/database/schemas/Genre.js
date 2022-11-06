@@ -1,15 +1,17 @@
 const mongoose = require("mongoose");
-const { songModel } = require("./Song");
 
 const genreSchema = new mongoose.Schema({
-  songs: {
-    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: songModel }],
-    required: true,
-  },
   name: {
     type: String,
     required: true,
   },
+  songs: {
+    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: "Song" }],
+    default: [],
+  },
 });
 
-module.exports = mongoose.model("Genre", genreSchema);
+module.exports = {
+  genreModel: mongoose.model("Genre", genreSchema),
+  genreSchema,
+};
