@@ -7,36 +7,33 @@ const commentSchema = new mongoose.Schema({
     //type: mongoose.SchemaTypes.ObjectId,
     type: String,
     required: true,
-    ref: listedSongModel,
+    // ref: listedSongModel,
   },
   postedBy: {
     type: mongoose.SchemaTypes.ObjectId,
     required: true,
     ref: userModel,
   },
-  repliedBy: {
-    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: "Comment" }],
-    required: true,
-    default:[]
-  },
   message: {
     type: String,
     required: true,
   },
+  repliedBy: {
+    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: "Comment" }],
+    //required: true,
+    default: [],
+  },
   //True if string is not empty. String will contain reason comment was flagged.
   flagged: {
     type: String,
-    required: true,
     default: "",
   },
   replies: {
     type: Number,
-    required: true,
     default: 0,
   },
   votes: {
     type: Number,
-    required: true,
     default: 0,
   },
 });
