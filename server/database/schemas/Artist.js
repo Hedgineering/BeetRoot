@@ -1,21 +1,19 @@
 const mongoose = require("mongoose");
 const { userModel } = require("./User");
-const { songModel } = require("./Song");
-const {genreModel} = require("./Genre")
 
 const artistSchema = new mongoose.Schema({
   user: {
-    type: mongoose.SchemaTypes.ObjectID,
+    type: mongoose.SchemaTypes.ObjectId,
     required: true,
     ref: userModel,
   },
   genre: {
-    type: mongoose.SchemaTypes.ObjectID,
+    type: mongoose.SchemaTypes.ObjectId,
     required: true,
-    ref: genreModel,
+    ref: "Genre",
   },
   songs: {
-    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: songModel }],
+    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: "Song" }],
     default: [],
   },
 });

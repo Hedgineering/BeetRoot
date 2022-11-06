@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { songModel } = require("./Song");
 
 const genreSchema = new mongoose.Schema({
   name: {
@@ -7,7 +6,7 @@ const genreSchema = new mongoose.Schema({
     required: true,
   },
   songs: {
-    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: songModel }],
+    type: [{ type: mongoose.SchemaTypes.ObjectId, ref: "Song" }],
     default: [],
   },
 });

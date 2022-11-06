@@ -67,17 +67,17 @@ try {
 
         // Users have to be added after roles, as users have a reference to roles that's required in their schema
         let adminUser, artistUser, listenerUser;
-        userModel
+        await userModel
           .find({})
           .then(async (users) => {
             if (users.length === 0) {
               console.log(
                 "No users found in database. Adding users to database."
               );
-              const adminId = roleModel
+              const adminId = await roleModel
                 .findOne({ name: "Admin" })
                 .then(async (admin) => {
-                  adminUser = await userModel.create([
+                  adminUser = await userModel.create(
                     {
                       username: "admin",
                       firstName: "admin",
@@ -87,12 +87,12 @@ try {
                       status: "normal",
                       roles: [admin._id],
                     },
-                  ]);
+                  );
                 });
-              const artistId = roleModel
+              const artistId = await roleModel
                 .findOne({ name: "Artist" })
                 .then(async (artist) => {
-                  artistUser = await userModel.create([
+                  artistUser = await userModel.create(
                     {
                       username: "artist",
                       firstName: "artist",
@@ -102,12 +102,64 @@ try {
                       status: "normal",
                       roles: [artist._id],
                     },
-                  ]);
+                  );
+
+                  //Seeding Genre Data
+                  await genreModel.find({}).then(async (genres) => {
+                    if (genres.length == 0) {
+                      console.log("No genres found in database. Adding genres.");
+                      const popGenre = await genreModel.create({ name: "pop" });
+
+                      //Seeding Artist Data
+                      console.log("No artists found in database. Adding artists.");
+                      let artistOne = await artistModel.create({
+                        user: artistUser._id,
+                        genre: popGenre._id,
+                      });
+
+                      //Seeding Song Data
+                      console.log("No songs found in database. Adding songs.");
+                      let songOne = await songModel.create({
+                        artist: artistOne._id,
+                        genre: popGenre._id,
+                        title: "Uptown Funk",
+                        duration: 125,
+                        explicit: false,
+                        license: "Licensed",
+                        description: "it's a song",
+                        published: new Date(2018, 3, 5),
+                      });
+
+                      //Seeding Listed Song Data
+                      console.log("No songs found in database. Adding songs.");
+                      let listedSongOne = await listedSongModel.create({
+                        creator: artistOne._id,
+                        song: songOne._id,
+                      });
+
+                      //Seeding Format Data
+                      console.log("No formats found in database. Adding formats.");
+                      let formatOne = await formatModel.create({
+                        song: songOne._id,
+                        price: 15,
+                        type: "mp3",
+                        preview: `${__dirname}/database/userFiles/audio/Just_The_Two_Of_Us.mp3`,
+                        source: `${__dirname}/database/userFiles/audio/Just_The_Two_Of_Us.mp3`,
+                      });
+
+                      //Updating Song with Format
+                      console.log("Updating song with format.");
+                      await listedSongModel.updateOne(
+                        { _id: listedSongOne._id },
+                        { $set: { formats: [formatOne._id] } }
+                      );
+                    }
+                  });
                 });
-              const listenerId = roleModel
+              const listenerId = await roleModel
                 .findOne({ name: "Listener" })
                 .then(async (listener) => {
-                  listenerUser = await userModel.create([
+                  listenerUser = await userModel.create(
                     {
                       username: "listener",
                       firstName: "listener",
@@ -117,54 +169,9 @@ try {
                       status: "normal",
                       roles: [listener._id],
                     },
-                  ]);
+                  );
                 });
             }
-
-            //Seeding Genre Data
-            // genreModel.find({}).then(async (genres) => {
-            //   if (genres.length == 0) {
-            //     const popGenre = await genreModel.create({ name: "pop" });
-            //     //Seeding Artist Data
-            //     let artistOne = await artistModel.create({
-            //       user: userDoc._id,
-            //       genre: popGenre._id,
-            //     });
-
-            //     //Seeding Song Data
-            //     let songOne = await songModel.create({
-            //       artist: artistOne._id,
-            //       genre: popGenre._id,
-            //       title: "Uptown Funk",
-            //       duration: 125,
-            //       explicit: false,
-            //       license: "Licensed",
-            //       description: "it's a song",
-            //       published: new Date(2018, 3, 5),
-            //     });
-
-            //     //Seeding Listed Song Data
-            //     let listedSongOne = await listedSongModel.create({
-            //       creator: artistOne._id,
-            //       song: songOne._id,
-            //     });
-
-            //     //Seeding Format Data
-            //     let formatOne = await formatModel.create({
-            //       song: songOne._id,
-            //       price: 15,
-            //       type: "mp3",
-            //       preview: `${__dirname}/database/userFiles/audio/Just_The_Two_Of_Us.mp3`,
-            //       source: `${__dirname}/database/userFiles/audio/Just_The_Two_Of_Us.mp3`,
-            //     });
-
-            //     //Updating Song with Format
-            //     await listedSongModel.updateOne(
-            //       { _id: listedSongOne._id },
-            //       { $set: { formats: [formatOne._id] } }
-            //     );
-            //   }
-            // });
           })
           .catch((error) => console.log(error));
       }
