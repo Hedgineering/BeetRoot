@@ -3,10 +3,13 @@ const { userModel } = require("./User");
 const { listedSongModel } = require("./ListedSong");
 
 const commentSchema = new mongoose.Schema({
+  parentComment: {
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: "Comment"
+  },
   listedSong: {
     //type: mongoose.SchemaTypes.ObjectId,
     type: String,
-    required: true,
     // ref: listedSongModel,
   },
   postedBy: {
