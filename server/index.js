@@ -29,6 +29,7 @@ const { songModel } = require("./database/schemas/Song");
 const { listedSongModel } = require("./database/schemas/ListedSong");
 const { formatModel } = require("./database/schemas/Format");
 const authController = require("./controllers/AuthController");
+const songListingController = require("./controllers/SongListingController")
 const commentController = require("./controllers/CommentController");
 
 const app = express();
