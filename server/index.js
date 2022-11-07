@@ -191,9 +191,6 @@ app.post("/register", authController.register);
 app.post("/login", authController.login);
 app.post("/catalog/:listingId", commentController.postComment);
 
-// POST for publishing a song listingx
-app.post("/catalog", songListingController.publish);
-
 // GET for root directory (default)
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
