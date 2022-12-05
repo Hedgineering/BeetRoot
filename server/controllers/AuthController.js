@@ -16,8 +16,8 @@ if (!env) {
 // ==========================
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { userModel } = require("../database/schemas/User");
-const { roleModel } = require("../database/schemas/Role");
+const { userModel } = require("../models/User");
+const { roleModel } = require("../models/Role");
 
 // ====================================
 // Endpoints for Registration and Login

@@ -16,9 +16,9 @@ if (!env) {
 // ==========================
 const jwt = require("jsonwebtoken");
 const { Types } = require("mongoose");
-const { userModel } = require("../database/schemas/User");
-const { commentModel } = require("../database/schemas/Comment");
-const { listedSongModel } = require("../database/schemas/ListedSong");
+const { userModel } = require("../models/User");
+const { commentModel } = require("../models/Comment");
+const { listedSongModel } = require("../models/ListedSong");
 
 // ==============================
 // Endpoints for Posting Comments

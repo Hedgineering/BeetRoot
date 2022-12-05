@@ -18,39 +18,57 @@ console.log(`Server configured for port ${server_port}`);
 // ==========================
 // General Require Statements
 // ==========================
-const cors = require("cors");
 const express = require("express");
+const cors = require("cors");
+const corsOptions = require("./config/CorsOptions");
+const { logger } = require("./middleware/LogEvents");
+const errorHandler = require("./middleware/ErrorHandler");
+const verifyJWT = require("./middleware/VerifyJWT");
+const cookieParser = require("cookie-parser");
+const credentials = require("./middleware/CorsCredentials");
 const mongoose = require("mongoose");
-const { roleModel } = require("./database/schemas/Role");
-const { userModel } = require("./database/schemas/User");
-const { genreModel } = require("./database/schemas/Genre");
-const { artistModel } = require("./database/schemas/Artist");
-const { songModel } = require("./database/schemas/Song");
-const { listedSongModel } = require("./database/schemas/ListedSong");
-const { formatModel } = require("./database/schemas/Format");
+const connectDB = require("./config/DbConnection");
+
+const { roleModel } = require("./models/Role");
+const { userModel } = require("./models/User");
+const { genreModel } = require("./models/Genre");
+const { artistModel } = require("./models/Artist");
+const { songModel } = require("./models/Song");
+const { listedSongModel } = require("./models/ListedSong");
+const { formatModel } = require("./models/Format");
+
 const authController = require("./controllers/AuthController");
 const commentController = require("./controllers/CommentController");
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// Set up default mongoose connection
+// Connect to MongoDB
 const mongoConnectionUri =
   env["MONGO_URI_TEST"] || "mongodb://localhost/beetroot";
 console.log(`Connecting to MongoDB at ${mongoConnectionUri}`);
+connectDB(mongoConnectionUri);
 
-const conn = mongoose
-  .connect(mongoConnectionUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB Connected"))
-  .catch((error) => console.log(error));
+// Custom middleware logger
+app.use(logger);
 
-const db = mongoose.connection;
-// Bind connection to error event (to get notification of connection errors)
-db.on("error", console.error.bind(console, "MongoDB connection error:"));
+// Handle options credentials check - before CORS!
+// and fetch cookies credentials requirement
+app.use(credentials);
+
+// Cross Origin Resource Sharing
+app.use(cors(corsOptions));
+
+// Built-in middleware to handle urlencoded form data
+app.use(express.urlencoded({ extended: false }));
+
+// Built-in middleware for json
+app.use(express.json());
+
+// Middleware for cookies
+app.use(cookieParser());
+
+// Serve static files
+app.use("/", express.static(path.join(__dirname, "/public")));
 
 try {
   // TODO: Add Seed Data to Database
@@ -77,41 +95,41 @@ try {
               const adminId = await roleModel
                 .findOne({ name: "Admin" })
                 .then(async (admin) => {
-                  adminUser = await userModel.create(
-                    {
-                      username: "admin",
-                      firstName: "admin",
-                      lastName: "1",
-                      password: "beetrootadmin!",
-                      email: "admin@beetroot.com",
-                      status: "normal",
-                      roles: [admin._id],
-                    },
-                  );
+                  adminUser = await userModel.create({
+                    username: "admin",
+                    firstName: "admin",
+                    lastName: "1",
+                    password: "beetrootadmin!",
+                    email: "admin@beetroot.com",
+                    status: "normal",
+                    roles: [admin._id],
+                  });
                 });
               const artistId = await roleModel
                 .findOne({ name: "Artist" })
                 .then(async (artist) => {
-                  artistUser = await userModel.create(
-                    {
-                      username: "artist",
-                      firstName: "artist",
-                      lastName: "1",
-                      password: "beetrootartist!",
-                      email: "artist@beetroot.com",
-                      status: "normal",
-                      roles: [artist._id],
-                    },
-                  );
+                  artistUser = await userModel.create({
+                    username: "artist",
+                    firstName: "artist",
+                    lastName: "1",
+                    password: "beetrootartist!",
+                    email: "artist@beetroot.com",
+                    status: "normal",
+                    roles: [artist._id],
+                  });
 
                   //Seeding Genre Data
                   await genreModel.find({}).then(async (genres) => {
                     if (genres.length == 0) {
-                      console.log("No genres found in database. Adding genres.");
+                      console.log(
+                        "No genres found in database. Adding genres."
+                      );
                       const popGenre = await genreModel.create({ name: "pop" });
 
                       //Seeding Artist Data
-                      console.log("No artists found in database. Adding artists.");
+                      console.log(
+                        "No artists found in database. Adding artists."
+                      );
                       let artistOne = await artistModel.create({
                         user: artistUser._id,
                         genre: popGenre._id,
@@ -138,7 +156,9 @@ try {
                       });
 
                       //Seeding Format Data
-                      console.log("No formats found in database. Adding formats.");
+                      console.log(
+                        "No formats found in database. Adding formats."
+                      );
                       let formatOne = await formatModel.create({
                         song: songOne._id,
                         price: 15,
@@ -159,17 +179,15 @@ try {
               const listenerId = await roleModel
                 .findOne({ name: "Listener" })
                 .then(async (listener) => {
-                  listenerUser = await userModel.create(
-                    {
-                      username: "listener",
-                      firstName: "listener",
-                      lastName: "1",
-                      password: "beetrootlistener!",
-                      email: "listener@beetroot.com",
-                      status: "normal",
-                      roles: [listener._id],
-                    },
-                  );
+                  listenerUser = await userModel.create({
+                    username: "listener",
+                    firstName: "listener",
+                    lastName: "1",
+                    password: "beetrootlistener!",
+                    email: "listener@beetroot.com",
+                    status: "normal",
+                    roles: [listener._id],
+                  });
                 });
             }
           })
@@ -185,17 +203,38 @@ try {
 // Configure Express Endpoints Here
 // =================================
 
+// Non-Protected Endpoints ---------
+
+// Protected Endpoints -------------
+app.use(verifyJWT); // middleware to verify JWT token
+
+
 // POST for registration and login
-app.post("/register", authController.register);
-app.post("/login", authController.login);
-app.post("/catalog/:listingId", commentController.postComment);
+// app.post("/register", authController.register);
+// app.post("/login", authController.login);
+// app.post("/catalog/:listingId", commentController.postComment);
 
 // GET for root directory (default)
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+// app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "index.html")); });
+
+// Catch all for 404
+app.all('*', (req, res) => {
+  res.status(404);
+  if (req.accepts('html')) {
+      res.sendFile(path.join(__dirname, 'views', '404.html'));
+  } else if (req.accepts('json')) {
+      res.json({ "error": "404 Not Found" });
+  } else {
+      res.type('txt').send("404 Not Found");
+  }
 });
 
+app.use(errorHandler);
+
 // This comes at the end as this starts the server
-app.listen(server_port, () => {
-  console.log(`Server listening on port ${server_port}`);
+mongoose.connection.once("open", () => {
+  console.log("Connected to MongoDB");
+  app.listen(server_port, () => {
+    console.log(`Server listening on port ${server_port}`);
+  });
 });
