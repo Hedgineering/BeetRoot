@@ -77,22 +77,17 @@ const register = (req, res) => {
 
           // check if the roles in the request body are only the ones in the database
           if (userRolesSet.size < requestedRoleStrings.length) {
-            res
-              .status(400)
-              .json({
-                message:
-                  "Roles must be valid. You have too many types of roles!",
-              });
+            res.status(400).json({
+              message: "Roles must be valid. You have too many types of roles!",
+            });
             return;
           }
           for (let role of requestedRoleStrings) {
             console.log("checking role: " + role);
             if (!userRolesSet.has(role)) {
-              res
-                .status(400)
-                .json({
-                  message: "Roles must be valid. Incorrect roles requested.",
-                });
+              res.status(400).json({
+                message: "Roles must be valid. Incorrect roles requested.",
+              });
               return;
             }
           }
@@ -130,20 +125,31 @@ const register = (req, res) => {
 
 const login = async (req, res) => {
   const { username, password } = req.body;
-  if(!username || !password) { return res.status(400).json({ message: "Username and password are required" }); }
+  if (!username || !password) {
+    return res
+      .status(400)
+      .json({ message: "Username and password are required" });
+  }
 
   try {
     const foundUser = await userModel.findOne({ username: user }).exec();
-    if (!foundUser) return res.status(401).json({ message: "No user with that username." }); //Unauthorized 
+    if (!foundUser)
+      return res.status(401).json({ message: "No user with that username." }); //Unauthorized
 
     const match = await bcrypt.compare(pwd, foundUser.password);
-    if(!match) return res.status(401).json({ message: "Incorrect Password." }); //Unauthorized
+    if (!match) return res.status(401).json({ message: "Incorrect Password." }); //Unauthorized
 
-    const rolesObjects = await roleModel.find({ _id: { $in: foundUser.roles } }).exec();
+    const rolesObjects = await roleModel
+      .find({ _id: { $in: foundUser.roles } })
+      .exec();
     const roles = rolesObjects.map((role) => role.name);
 
-    const accessSecret = process.env.ACCESS_TOKEN_SECRET || env["ACCESS_TOKEN_SECRET"] || "HedgineeringIsAwesome";
-    const accessToken = jwt.sign({
+    const accessSecret =
+      process.env.ACCESS_TOKEN_SECRET ||
+      env["ACCESS_TOKEN_SECRET"] ||
+      "HedgineeringIsAwesome";
+    const accessToken = jwt.sign(
+      {
         UserInfo: {
           username: foundUser.username,
           roles: roles,
@@ -153,7 +159,10 @@ const login = async (req, res) => {
       { expiresIn: 60 }
     );
 
-    const refreshSecret = process.env.REFRESH_TOKEN_SECRET || env["REFRESH_TOKEN_SECRET"] || "HedgineeringIsAwesome";
+    const refreshSecret =
+      process.env.REFRESH_TOKEN_SECRET ||
+      env["REFRESH_TOKEN_SECRET"] ||
+      "HedgineeringIsAwesome";
     const refreshToken = jwt.sign(
       { username: foundUser.username },
       refreshSecret,
@@ -165,10 +174,17 @@ const login = async (req, res) => {
     const result = await foundUser.save();
 
     // Creates Secure Cookie with refresh token
-    res.cookie('jwt', refreshToken, { httpOnly: true, secure: true, sameSite: 'None', maxAge: 24 * 60 * 60 * 1000 });
+    res.cookie("jwt", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
 
     // Send authorization roles and access token to user
-    return res.status(200).json({ roles, accessToken, message: "Login Success!" });
+    return res
+      .status(200)
+      .json({ roles, accessToken, message: "Login Success!" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error logging in" });

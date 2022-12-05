@@ -40,7 +40,7 @@ const postComment = async (req, res, next) => {
 
   console.log(`Searching for listing with ID ${listingId}`);
 
-  listedSongModel.find({_id: listingId}, (err, listing) => {
+  listedSongModel.find({ _id: listingId }, (err, listing) => {
     if (err) {
       console.log(err);
       return res.status(400).json({ error: "Invalid listing ID" });
@@ -73,7 +73,7 @@ const postComment = async (req, res, next) => {
         res.status(200).json({ message: "Comment Posted!" });
       }
     });
-  })
+  });
 };
 
 module.exports = {
