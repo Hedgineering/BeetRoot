@@ -23,13 +23,14 @@ console.log(`Server configured for port ${server_port}`);
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 
 // Custom Modules
 const corsOptions = require("./config/CorsOptions");
 const { logger } = require("./middleware/LogEvents");
 const errorHandler = require("./middleware/ErrorHandler");
-const verifyJWT = require("./middleware/VerifyJWT");
+const { verifyJWT } = require("./middleware/VerifyJWT");
 const credentials = require("./middleware/CorsCredentials");
 const connectDB = require("./config/DbConnection");
 const app = express();
@@ -95,14 +96,17 @@ try {
               console.log(
                 "No users found in database. Adding users to database."
               );
+              const saltRounds = 10;
               const adminId = await roleModel
                 .findOne({ name: "Admin" })
                 .then(async (admin) => {
+                  const encryptedAdminPassword = 
+                    await bcrypt.hash( "beetrootadmin!", saltRounds);
                   adminUser = await userModel.create({
                     username: "admin",
                     firstName: "admin",
                     lastName: "1",
-                    password: "beetrootadmin!",
+                    password: encryptedAdminPassword,
                     email: "admin@beetroot.com",
                     status: "normal",
                     roles: [admin._id],
@@ -111,11 +115,13 @@ try {
               const artistId = await roleModel
                 .findOne({ name: "Artist" })
                 .then(async (artist) => {
+                  const encryptedArtistPassword = 
+                    await bcrypt.hash( "beetrootartist!", saltRounds);
                   artistUser = await userModel.create({
                     username: "artist",
                     firstName: "artist",
                     lastName: "1",
-                    password: "beetrootartist!",
+                    password: encryptedArtistPassword,
                     email: "artist@beetroot.com",
                     status: "normal",
                     roles: [artist._id],
@@ -182,11 +188,13 @@ try {
               const listenerId = await roleModel
                 .findOne({ name: "Listener" })
                 .then(async (listener) => {
+                  const encryptedListenerPassword = 
+                    await bcrypt.hash( "beetrootlistener!", saltRounds);
                   listenerUser = await userModel.create({
                     username: "listener",
                     firstName: "listener",
                     lastName: "1",
-                    password: "beetrootlistener!",
+                    password: encryptedListenerPassword,
                     email: "listener@beetroot.com",
                     status: "normal",
                     roles: [listener._id],

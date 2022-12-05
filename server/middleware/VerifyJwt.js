@@ -38,4 +38,18 @@ const verifyJWT = (req, res, next) => {
   });
 };
 
-module.exports = verifyJWT;
+/**
+ * Takes a JSON Web Token and returns an array of the string roles in the token
+ * @param {String} jwt JWT token
+ */
+const getRolesFromJWT = (token) => {
+  return jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err || !decoded.UserInfo || !decoded.UserInfo.roles) {
+      return [];
+    }
+
+    return decoded.UserInfo.roles;
+  });
+};
+
+module.exports = {verifyJWT, getRolesFromJWT};
