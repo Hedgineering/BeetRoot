@@ -15,31 +15,23 @@ const server_port = process.env.PORT || env["PORT"] || 5000;
 // if .env file loaded properly, this should print 3000, else it will print 5000
 console.log(`Server configured for port ${server_port}`);
 
-// ==========================
-// General Require Statements
-// ==========================
+// ===========================
+// Module and Middleware Setup
+// ===========================
+
+// Npm Packages
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const mongoose = require("mongoose");
+
+// Custom Modules
 const corsOptions = require("./config/CorsOptions");
 const { logger } = require("./middleware/LogEvents");
 const errorHandler = require("./middleware/ErrorHandler");
 const verifyJWT = require("./middleware/VerifyJWT");
-const cookieParser = require("cookie-parser");
 const credentials = require("./middleware/CorsCredentials");
-const mongoose = require("mongoose");
 const connectDB = require("./config/DbConnection");
-
-const { roleModel } = require("./models/Role");
-const { userModel } = require("./models/User");
-const { genreModel } = require("./models/Genre");
-const { artistModel } = require("./models/Artist");
-const { songModel } = require("./models/Song");
-const { listedSongModel } = require("./models/ListedSong");
-const { formatModel } = require("./models/Format");
-
-const authController = require("./controllers/AuthController");
-const commentController = require("./controllers/CommentController");
-
 const app = express();
 
 // Connect to MongoDB
@@ -69,6 +61,17 @@ app.use(cookieParser());
 
 // Serve static files
 app.use("/", express.static(path.join(__dirname, "/public")));
+
+// ==========================
+// Add Seed Data for Database
+// ==========================
+const { roleModel } = require("./models/Role");
+const { userModel } = require("./models/User");
+const { genreModel } = require("./models/Genre");
+const { artistModel } = require("./models/Artist");
+const { songModel } = require("./models/Song");
+const { listedSongModel } = require("./models/ListedSong");
+const { formatModel } = require("./models/Format");
 
 try {
   // TODO: Add Seed Data to Database
@@ -199,15 +202,21 @@ try {
   console.log(error);
 }
 
-// =================================
-// Configure Express Endpoints Here
-// =================================
+// ===========================
+// Configure Express Endpoints
+// ===========================
+const authController = require("./controllers/AuthController");
+const commentController = require("./controllers/CommentController");
 
 // Non-Protected Endpoints ---------
+app.use('/', require('./routes/root'));
+app.use('/register', require('./routes/register'));
+app.use('/login', require('./routes/login'));
+app.use('/refresh', require('./routes/refresh'));
+app.use('/logout', require('./routes/logout'));
 
 // Protected Endpoints -------------
 app.use(verifyJWT); // middleware to verify JWT token
-
 
 // POST for registration and login
 // app.post("/register", authController.register);
@@ -218,20 +227,23 @@ app.use(verifyJWT); // middleware to verify JWT token
 // app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "index.html")); });
 
 // Catch all for 404
-app.all('*', (req, res) => {
+app.all("*", (req, res) => {
   res.status(404);
-  if (req.accepts('html')) {
-      res.sendFile(path.join(__dirname, 'views', '404.html'));
-  } else if (req.accepts('json')) {
-      res.json({ "error": "404 Not Found" });
+  if (req.accepts("html")) {
+    res.sendFile(path.join(__dirname, "views", "404.html"));
+  } else if (req.accepts("json")) {
+    res.json({ error: "404 Not Found" });
   } else {
-      res.type('txt').send("404 Not Found");
+    res.type("txt").send("404 Not Found");
   }
 });
 
+// Error Handling at the end of the middleware chain
+// to be done if all other routes fail
 app.use(errorHandler);
 
 // This comes at the end as this starts the server
+// after all the configuration and seeding is done
 mongoose.connection.once("open", () => {
   console.log("Connected to MongoDB");
   app.listen(server_port, () => {

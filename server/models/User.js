@@ -38,6 +38,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     default: "Normal",
   },
+  refreshToken: String
 });
 
 // This is a pre-save hook that will run before the user is saved to the database

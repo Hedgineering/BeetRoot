@@ -128,46 +128,51 @@ const register = (req, res) => {
   });
 };
 
-const login = (req, res) => {
-  //Redirect if success to login
-  const user = userModel.findOne({ username: req.body.username }).then((user) => {
-    if (!user) {
-      res.status(400).json({ message: "User not found" });
-      return;
-    }
-    try {
-      console.log(user);
-      console.log(user.password);
-      bcrypt.compare(req.body.password, user.password, (err, data) => {
-        console.log("comparing passwords");
-        //if error than throw error
-        if (err) {
-          console.log(err);
-          res.status(500).json({ message: "Error logging in" });
-          return;
-        }
-        //if both match than you can do anything
-        if (data) {
-          console.log("passwords match");
-          const secret =
-            process.env.ACCESS_TOKEN_SECRET ||
-            env["ACCESS_TOKEN_SECRET"] ||
-            "HedgineeringIsAwesome";
-          const token = jwt.sign({username: user.username, roles: user.roles}, secret);
+const login = async (req, res) => {
+  const { username, password } = req.body;
+  if(!username || !password) { return res.status(400).json({ message: "Username and password are required" }); }
 
-          res.status(200).send({ message: "Success", token: token });
-          return;
-        } else {
-          console.log("passwords don't match");
-          return res.status(401).json({ msg: "Invalid credencial" });
-        }
-      });
-    } catch(error) {
-      console.log(error);
-      res.status(500).send();
-      return;
-    }
-  });
+  try {
+    const foundUser = await userModel.findOne({ username: user }).exec();
+    if (!foundUser) return res.status(401).json({ message: "No user with that username." }); //Unauthorized 
+
+    const match = await bcrypt.compare(pwd, foundUser.password);
+    if(!match) return res.status(401).json({ message: "Incorrect Password." }); //Unauthorized
+
+    const rolesObjects = await roleModel.find({ _id: { $in: foundUser.roles } }).exec();
+    const roles = rolesObjects.map((role) => role.name);
+
+    const accessSecret = process.env.ACCESS_TOKEN_SECRET || env["ACCESS_TOKEN_SECRET"] || "HedgineeringIsAwesome";
+    const accessToken = jwt.sign({
+        UserInfo: {
+          username: foundUser.username,
+          roles: roles,
+        },
+      },
+      accessSecret,
+      { expiresIn: 60 }
+    );
+
+    const refreshSecret = process.env.REFRESH_TOKEN_SECRET || env["REFRESH_TOKEN_SECRET"] || "HedgineeringIsAwesome";
+    const refreshToken = jwt.sign(
+      { username: foundUser.username },
+      refreshSecret,
+      { expiresIn: "1d" }
+    );
+
+    // Saving refreshToken with current user
+    foundUser.refreshToken = refreshToken;
+    const result = await foundUser.save();
+
+    // Creates Secure Cookie with refresh token
+    res.cookie('jwt', refreshToken, { httpOnly: true, secure: true, sameSite: 'None', maxAge: 24 * 60 * 60 * 1000 });
+
+    // Send authorization roles and access token to user
+    return res.status(200).json({ roles, accessToken, message: "Login Success!" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error logging in" });
+  }
 };
 
 module.exports = {
