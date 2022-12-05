@@ -74,141 +74,158 @@ const { songModel } = require("./models/Song");
 const { listedSongModel } = require("./models/ListedSong");
 const { formatModel } = require("./models/Format");
 
-try {
-  // TODO: Add Seed Data to Database
-  roleModel
-    .find({})
-    .then(async (roles) => {
-      if (roles.length === 0) {
-        console.log("No roles found in database. Adding roles to database.");
-        await roleModel.create([
-          { name: "Listener", clearanceLevel: 1 },
-          { name: "Artist", clearanceLevel: 1 },
-          { name: "Admin", clearanceLevel: 2 },
-        ]);
+async function SeedDatabase() {
+  try {
+    // Seed Roles
+    const roles = await roleModel.find({}).exec();
+    if (roles.length === 0) {
+      console.log("No roles found in database. Seeding roles...");
+      await roleModel.create([
+        { name: "Listener", clearanceLevel: 1 },
+        { name: "Artist", clearanceLevel: 1 },
+        { name: "Admin", clearanceLevel: 2 },
+      ]);
+    }
 
-        // Users have to be added after roles, as users have a reference to roles that's required in their schema
-        let adminUser, artistUser, listenerUser;
-        await userModel
-          .find({})
-          .then(async (users) => {
-            if (users.length === 0) {
-              console.log(
-                "No users found in database. Adding users to database."
-              );
-              const saltRounds = 10;
-              const adminId = await roleModel
-                .findOne({ name: "Admin" })
-                .then(async (admin) => {
-                  const encryptedAdminPassword = 
-                    await bcrypt.hash( "beetrootadmin!", saltRounds);
-                  adminUser = await userModel.create({
-                    username: "admin",
-                    firstName: "admin",
-                    lastName: "1",
-                    password: encryptedAdminPassword,
-                    email: "admin@beetroot.com",
-                    status: "normal",
-                    roles: [admin._id],
-                  });
-                });
-              const artistId = await roleModel
-                .findOne({ name: "Artist" })
-                .then(async (artist) => {
-                  const encryptedArtistPassword = 
-                    await bcrypt.hash( "beetrootartist!", saltRounds);
-                  artistUser = await userModel.create({
-                    username: "artist",
-                    firstName: "artist",
-                    lastName: "1",
-                    password: encryptedArtistPassword,
-                    email: "artist@beetroot.com",
-                    status: "normal",
-                    roles: [artist._id],
-                  });
+    // Seed Users
+    const users = await userModel.find({}).exec();
+    if (users.length === 0) {
+      console.log("No users found in database. Seeding users...");
+      const saltRounds = 10;
 
-                  //Seeding Genre Data
-                  await genreModel.find({}).then(async (genres) => {
-                    if (genres.length == 0) {
-                      console.log(
-                        "No genres found in database. Adding genres."
-                      );
-                      const popGenre = await genreModel.create({ name: "pop" });
+      // Insert a default admin user
+      const adminId = await roleModel.findOne({ name: "Admin" }).exec();
+      const encryptedAdminPassword = await bcrypt.hash(
+        "beetrootadmin!",
+        saltRounds
+      );
+      const adminUser = await userModel.create({
+        username: "admin",
+        firstName: "admin",
+        lastName: "1",
+        password: encryptedAdminPassword,
+        email: "admin@beetroot.com",
+        status: "normal",
+        roles: [adminId._id],
+      });
 
-                      //Seeding Artist Data
-                      console.log(
-                        "No artists found in database. Adding artists."
-                      );
-                      let artistOne = await artistModel.create({
-                        user: artistUser._id,
-                        genre: popGenre._id,
-                      });
+      // Insert a default artist user
+      const artistId = await roleModel.findOne({ name: "Artist" }).exec();
+      const encryptedArtistPassword = await bcrypt.hash(
+        "beetrootartist!",
+        saltRounds
+      );
+      const artistUser = await userModel.create({
+        username: "artist",
+        firstName: "artist",
+        lastName: "1",
+        password: encryptedArtistPassword,
+        email: "artist@beetroot.com",
+        status: "normal",
+        roles: [artistId._id],
+      });
 
-                      //Seeding Song Data
-                      console.log("No songs found in database. Adding songs.");
-                      let songOne = await songModel.create({
-                        artist: artistOne._id,
-                        genre: popGenre._id,
-                        title: "Uptown Funk",
-                        duration: 125,
-                        explicit: false,
-                        license: "Licensed",
-                        description: "it's a song",
-                        published: new Date(2018, 3, 5),
-                      });
+      // Insert a default listener user
+      const listenerId = await roleModel.findOne({ name: "Listener" }).exec();
+      const encryptedListenerPassword = await bcrypt.hash(
+        "beetrootlistener!",
+        saltRounds
+      );
+      const listenerUser = await userModel.create({
+        username: "listener",
+        firstName: "listener",
+        lastName: "1",
+        password: encryptedListenerPassword,
+        email: "listener@beetroot.com",
+        status: "normal",
+        roles: [listenerId._id],
+      });
+    }
 
-                      //Seeding Listed Song Data
-                      console.log("No songs found in database. Adding songs.");
-                      let listedSongOne = await listedSongModel.create({
-                        creator: artistOne._id,
-                        song: songOne._id,
-                      });
+    // Seed Genres
+    const genres = await genreModel.find({}).exec();
+    if (genres.length === 0) {
+      console.log("No genres found in database. Seeding genres...");
+      await genreModel.create([
+        { name: "Rock" },
+        { name: "Pop" },
+        { name: "Jazz" },
+        { name: "Hip Hop" },
+        { name: "Classical" },
+      ]);
+    }
 
-                      //Seeding Format Data
-                      console.log(
-                        "No formats found in database. Adding formats."
-                      );
-                      let formatOne = await formatModel.create({
-                        song: songOne._id,
-                        price: 15,
-                        type: "mp3",
-                        preview: `${__dirname}/database/userFiles/audio/Just_The_Two_Of_Us.mp3`,
-                        source: `${__dirname}/database/userFiles/audio/Just_The_Two_Of_Us.mp3`,
-                      });
+    // Seed Artists
+    const artists = await artistModel.find({}).exec();
+    if (artists.length === 0) {
+      console.log("No artists found in database. Seeding artists...");
+      const artistUser = await userModel.findOne({ username: "artist" }).exec();
+      const popGenre = await genreModel.findOne({ name: "Pop" }).exec();
+      await artistModel.create({
+        username: artistUser.username,
+        user: artistUser._id,
+        genre: popGenre._id,
+      });
+    }
 
-                      //Updating Song with Format
-                      console.log("Updating song with format.");
-                      await listedSongModel.updateOne(
-                        { _id: listedSongOne._id },
-                        { $set: { formats: [formatOne._id] } }
-                      );
-                    }
-                  });
-                });
-              const listenerId = await roleModel
-                .findOne({ name: "Listener" })
-                .then(async (listener) => {
-                  const encryptedListenerPassword = 
-                    await bcrypt.hash( "beetrootlistener!", saltRounds);
-                  listenerUser = await userModel.create({
-                    username: "listener",
-                    firstName: "listener",
-                    lastName: "1",
-                    password: encryptedListenerPassword,
-                    email: "listener@beetroot.com",
-                    status: "normal",
-                    roles: [listener._id],
-                  });
-                });
-            }
-          })
-          .catch((error) => console.log(error));
-      }
-    })
-    .catch((error) => console.log(error));
-} catch (error) {
-  console.log(error);
+    // Seed Songs
+    const songs = await songModel.find({}).exec();
+    if (songs.length === 0) {
+      console.log("No songs found in database. Seeding songs...");
+      const artistUser = await artistModel.findOne({ username: "artist" }).exec();
+      const popGenre = await genreModel.findOne({ name: "Pop" }).exec();
+      const songOne = await songModel.create({
+        artist: artistUser._id,
+        genre: popGenre._id,
+        title: "Just The Two Of Us",
+        duration: 125,
+        explicit: false,
+        license: "Licensed",
+        description: "it's a song",
+        published: new Date(2018, 3, 5),
+      });
+      await artistModel.updateOne({ _id: artistUser._id }, { $push: { songs: songOne._id } });
+    }
+
+    // Seed Listed Songs
+    const listedSongs = await listedSongModel.find({}).exec();
+    if (listedSongs.length === 0) {
+      console.log("No listed songs found in database. Seeding listed songs...");
+      const artistOne = await artistModel.findOne({}).exec();
+      const songOne = await songModel.findOne({}).exec();
+      await listedSongModel.create({
+        creator: artistOne._id,
+        song: songOne._id,
+      });
+    }
+
+    // Seed Formats
+    const formats = await formatModel.find({}).exec();
+    if (formats.length === 0) {
+      console.log("No formats found in database. Seeding formats...");
+      const songOne = await songModel.findOne({}).exec();
+      const listedSongOne = await listedSongModel.findOne({}).exec();
+      let formatOne = await formatModel.create({
+        song: songOne._id,
+        price: 15,
+        type: "mp3",
+        preview: `${__dirname}/database/userFiles/audio/Just_The_Two_Of_Us.mp3`,
+        source: `${__dirname}/database/userFiles/audio/Just_The_Two_Of_Us.mp3`,
+      });
+
+      //Updating Song with Format
+      console.log("Updating song with format.");
+      await listedSongModel.updateOne(
+        { _id: listedSongOne._id },
+        { $push: { formats: formatOne._id } }
+      );
+    }
+  } catch (error) {
+    console.log(error);
+  }
 }
+
+SeedDatabase();
 
 // ===========================
 // Configure Express Endpoints
