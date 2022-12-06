@@ -21,6 +21,9 @@ const getGenres = async (req, res) => {
 
 /**
  * Takes request with genre id and returns genre object if it exists, null otherwise
+ * Expects genre id as url parameter:
+ * 
+ * Ex: www.beetroot.com/api/genres/5f9f1b9f9f1b9f1b9f1b9f1b
  * 
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
@@ -38,6 +41,11 @@ const getGenre = async (req, res) => {
 
 /**
  * Takes request with genre name and returns genre object created
+ * Expects:
+ * ```json
+ * { "name": String, "songs": [String] }
+ * ```
+ * songs should be an array of song ids in String format, can be empty
  * 
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
@@ -72,6 +80,14 @@ const createGenre = async (req, res) => {
 /**
  * Takes request with genre name and returns genre object updated as result
  * Replaces existing genre with new genre created with passed name and songs
+ * 
+ * Expects:
+ * ```json
+ * { "id": String, "name": String, "songs": [String] }
+ * ```
+ * id and name are required, with id being the object id of the genre to update in String format
+ * 
+ * songs should be an array of song ids in String format, can be empty
  * 
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
@@ -112,6 +128,14 @@ const updateGenre = async (req, res) => {
 
 /**
  * Takes request with genre id and songs to insert and returns genre object updated
+ * 
+ * Expects:
+ * ```json
+ * { "id": String, "songs": [String] }
+ * ```
+ * id is required, with id being the object id of the genre to update in String format
+ * 
+ * songs is required, with songs being an array of song ids in String format
  * 
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
@@ -155,6 +179,12 @@ const addSongsToGenre = async (req, res) => {
 
 /**
  * Takes request with genre id of genre to delete
+ * 
+ * Expects:
+ * ```json
+ * { "id": String }
+ * ```
+ * id is required, with id being the object id of the genre to delete in String format
  * 
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
