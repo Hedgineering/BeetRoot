@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 const { userModel } = require("./User");
 
 const artistSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   user: {
     type: mongoose.SchemaTypes.ObjectId,
     required: true,

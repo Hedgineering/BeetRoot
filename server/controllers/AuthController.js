@@ -16,158 +16,159 @@ if (!env) {
 // ==========================
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { userModel } = require("../database/schemas/User");
-const { roleModel } = require("../database/schemas/Role");
+const { userModel } = require("../models/User");
+const { roleModel } = require("../models/Role");
+const { getRolesFromJWT } = require("../middleware/VerifyJwt");
 
 // ====================================
 // Endpoints for Registration and Login
 // ====================================
-const register = (req, res) => {
-  if (!req.body || !req.body.password) {
-    res.status(400).json({ message: "Password is required" });
-    return;
-  }
-  let requestedRoleStrings = [];
-  if (!req.body.roles || req.body.roles.length === 0) {
-    requestedRoleStrings.push("Listener");
-  } else {
-    requestedRoleStrings = Array.from(req.body.roles);
-  }
+const register = async (req, res) => {
+  const { username, password, firstName, lastName, email, status, roles } =
+    req.body;
+
   if (
-    !req.body.username ||
-    !req.body.email ||
-    !req.body.firstName ||
-    !req.body.lastName ||
-    !req.body.status
+    !req.body ||
+    !password ||
+    !username ||
+    !firstName ||
+    !lastName ||
+    !email ||
+    !status ||
+    !roles
   ) {
-    res.status(400).json({ message: "All fields are required" });
+    res.status(400).json({ message: "All registration fields are required." });
     return;
   }
 
-  userModel.findOne({ username: req.body.username }, (err, user) => {
-    if (err) {
-      console.log(err);
+  let requestedRoleStrings = [];
+  if (roles.length === 0) {
+    requestedRoleStrings.push("Listener");
+  } else if (roles.includes("Admin")) {
+    // Admins can only be created by other admins
+    // Validate that the person attempting to create an admin is an admin
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "No authorization header" });
     }
-    if (user) {
-      res.status(400).json({ message: "Username already exists" });
-      return;
+
+    // Get the token from the header, get roles from token,
+    // and ensure user trying to create an admin user has admin role
+    const token = authHeader.split(" ")[1];
+    const tokenRoles = getRolesFromJWT(token);
+    if (!tokenRoles.includes("Admin")) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
-    // Make sure that req.body.roles doesn't contain "Admin" role
-    if (requestedRoleStrings.includes("Admin")) {
-      res
-        .status(400)
-        .json({ message: "Admin role cannot be assigned to a user" });
-      return;
+    requestedRoleStrings = [...roles];
+  } else {
+    requestedRoleStrings = [...roles];
+  }
+
+  try {
+    const foundUser = await userModel.findOne({ username: username }).exec();
+    if (foundUser) {
+      return res.status(400).json({ message: "Username already exists." });
     }
 
     //Increase the amount in gensalt to increase security but will slow down registration significantly.
     const saltRounds = 10;
-    bcrypt.hash(req.body.password, saltRounds, function (err, hashedPassword) {
-      // Store hash in database here
-      // requested roles to be used for applying roles if valid
-      let requestedRoles = [];
+    const encryptedPassword = await bcrypt.hash(password, saltRounds);
 
-      // validate request roles
-      const roles = roleModel
-        .find({})
-        .select({ name: 1, _id: 1 })
-        .then(async (roles) => {
-          const userRolesSet = new Set(roles.map((role) => role.name));
-          console.log(userRolesSet);
+    // requested roles to be used for applying roles if valid
+    let requestedRoles = [];
+    const foundRoles = await roleModel
+      .find({ name: { $in: requestedRoleStrings } })
+      .exec();
+    if (!foundRoles || foundRoles.length === 0) {
+      return res.status(400).json({ message: "Invalid roles." });
+    }
+    // if all roles are valid, then add their roleIds to the requestedRoles array
+    requestedRoles = foundRoles.map((role) => role._id);
 
-          // check if the roles in the request body are only the ones in the database
-          if (userRolesSet.size < requestedRoleStrings.length) {
-            res
-              .status(400)
-              .json({
-                message:
-                  "Roles must be valid. You have too many types of roles!",
-              });
-            return;
-          }
-          for (let role of requestedRoleStrings) {
-            console.log("checking role: " + role);
-            if (!userRolesSet.has(role)) {
-              res
-                .status(400)
-                .json({
-                  message: "Roles must be valid. Incorrect roles requested.",
-                });
-              return;
-            }
-          }
-
-          requestedRoleStrings = new Set(requestedRoleStrings);
-          console.log(roles);
-
-          // if all roles are valid, then add their roleIds to the requestedRoles array
-          requestedRoles = roles
-            .filter((role) => requestedRoleStrings.has(role.name))
-            .map((role) => role._id);
-          console.log("requestedRoles: ", requestedRoles);
-          try {
-            await userModel.create([
-              {
-                username: req.body.username,
-                firstName: req.body.firstName,
-                lastName: req.body.lastName,
-                password: hashedPassword,
-                email: req.body.email,
-                status: req.body.status || "Normal",
-                roles: requestedRoles,
-              },
-            ]);
-            res.status(200).json({ message: "User registered successfully!" });
-          } catch (error) {
-            // only log error internally, exposing error to user is a security risk
-            console.log(error);
-            res.status(500).json({ message: "Error registering user" });
-          }
-        });
-    });
-  });
+    await userModel.create([
+      {
+        username: username,
+        firstName: firstName,
+        lastName: lastName,
+        password: encryptedPassword,
+        email: email,
+        status: status || "Normal",
+        roles: requestedRoles,
+      },
+    ]);
+    return res.status(200).json({ message: "User registered successfully!" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error registering user" });
+  }
 };
 
-const login = (req, res) => {
-  //Redirect if success to login
-  const user = userModel.findOne({ username: req.body.username }).then((user) => {
-    if (!user) {
-      res.status(400).json({ message: "User not found" });
-      return;
-    }
-    try {
-      console.log(user);
-      console.log(user.password);
-      bcrypt.compare(req.body.password, user.password, (err, data) => {
-        console.log("comparing passwords");
-        //if error than throw error
-        if (err) {
-          console.log(err);
-          res.status(500).json({ message: "Error logging in" });
-          return;
-        }
-        //if both match than you can do anything
-        if (data) {
-          console.log("passwords match");
-          const secret =
-            process.env.ACCESS_TOKEN_SECRET ||
-            env["ACCESS_TOKEN_SECRET"] ||
-            "HedgineeringIsAwesome";
-          const token = jwt.sign({username: user.username, roles: user.roles}, secret);
+const login = async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res
+      .status(400)
+      .json({ message: "Username and password are required" });
+  }
 
-          res.status(200).send({ message: "Success", token: token });
-          return;
-        } else {
-          console.log("passwords don't match");
-          return res.status(401).json({ msg: "Invalid credencial" });
-        }
-      });
-    } catch(error) {
-      console.log(error);
-      res.status(500).send();
-      return;
-    }
-  });
+  try {
+    const foundUser = await userModel.findOne({ username: username }).exec();
+    if (!foundUser)
+      return res.status(401).json({ message: "No user with that username." }); //Unauthorized
+
+    const match = await bcrypt.compare(password, foundUser.password);
+    if (!match) return res.status(401).json({ message: "Incorrect Password." }); //Unauthorized
+
+    const rolesObjects = await roleModel
+      .find({ _id: { $in: foundUser.roles } })
+      .exec();
+    const roles = rolesObjects.map((role) => role.name);
+
+    const accessSecret =
+      process.env.ACCESS_TOKEN_SECRET ||
+      env["ACCESS_TOKEN_SECRET"] ||
+      "HedgineeringIsAwesome";
+    const accessToken = jwt.sign(
+      {
+        UserInfo: {
+          username: foundUser.username,
+          roles: roles,
+        },
+      },
+      accessSecret,
+      { expiresIn: 60 }
+    );
+
+    const refreshSecret =
+      process.env.REFRESH_TOKEN_SECRET ||
+      env["REFRESH_TOKEN_SECRET"] ||
+      "HedgineeringIsAwesome";
+    const refreshToken = jwt.sign(
+      { username: foundUser.username },
+      refreshSecret,
+      { expiresIn: "1d" }
+    );
+
+    // Saving refreshToken with current user
+    foundUser.refreshToken = refreshToken;
+    const result = await foundUser.save();
+
+    // Creates Secure Cookie with refresh token
+    res.cookie("jwt", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    // Send authorization roles and access token to user
+    return res
+      .status(200)
+      .json({ roles, accessToken, message: "Login Success!" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error logging in" });
+  }
 };
 
 module.exports = {
