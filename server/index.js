@@ -185,6 +185,7 @@ async function SeedDatabase() {
         published: new Date(2018, 3, 5),
       });
       await artistModel.updateOne({ _id: artistUser._id }, { $push: { songs: songOne._id } });
+      await genreModel.updateOne({ _id: popGenre._id }, { $push: { songs: songOne._id } });
     }
 
     // Seed Listed Songs
@@ -234,22 +235,30 @@ const authController = require("./controllers/AuthController");
 const commentController = require("./controllers/CommentController");
 
 // Non-Protected Endpoints ---------
-app.use("/", require("./routes/root"));
-app.use("/register", require("./routes/register"));
-app.use("/login", require("./routes/login"));
-app.use("/refresh", require("./routes/refresh"));
-app.use("/logout", require("./routes/logout"));
+app.use("/", require("./routes/Root"));
+app.use("/register", require("./routes/Register"));
+app.use("/login", require("./routes/Login"));
+app.use("/refresh", require("./routes/Refresh"));
+app.use("/logout", require("./routes/Logout"));
 
 // Protected Endpoints -------------
-app.use(verifyJWT); // middleware to verify JWT token
+// middleware to verify JWT token, 
+// only authenticated users can access protected endpoints
+app.use(verifyJWT); 
 
-// POST for registration and login
-// app.post("/register", authController.register);
-// app.post("/login", authController.login);
-// app.post("/catalog/:listingId", commentController.postComment);
-
-// GET for root directory (default)
-// app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "index.html")); });
+// app.use("/api/album", require("./routes/api/Albums"));
+// app.use("/api/artist", require("./routes/api/Artists"));
+app.use("/api/comment", require("./routes/api/Comments")); // TODO: test this endpoint
+// app.use("/api/format", require("./routes/api/Formats"));
+app.use("/api/genre", require("./routes/api/Genres"));
+// app.use("/api/history", require("./routes/api/Histories"));
+// app.use("/api/library", require("./routes/api/Libraries"));
+// app.use("/api/listedsong", require("./routes/api/ListedSongs"));
+// app.use("/api/playlist", require("./routes/api/Playlists"));
+// app.use("/api/purchasedsong", require("./routes/api/PurchasedSongs"));
+// app.use("/api/role", require("./routes/api/Roles"));
+// app.use("/api/song", require("./routes/api/Songs"));
+// app.use("/api/user", require("./routes/api/Users"));
 
 // Catch all for 404
 app.all("*", (req, res) => {

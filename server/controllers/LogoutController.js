@@ -1,17 +1,17 @@
-const User = require("../models/User");
+const {userModel} = require("../models/User");
 
 const logout = async (req, res) => {
   // On client, also delete the accessToken
 
   const cookies = req.cookies;
-  if (!cookies?.jwt) return res.sendStatus(204); //No content
+  if (!cookies?.jwt) return res.status(401).json({ message: "Unauthorized cookie" });
   const refreshToken = cookies.jwt;
 
   // Is refreshToken in db?
-  const foundUser = await User.findOne({ refreshToken }).exec();
+  const foundUser = await userModel.findOne({ refreshToken }).exec();
   if (!foundUser) {
     res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
-    return res.sendStatus(204);
+    return res.status(403).json({ message: "Forbidden, no correlated user" });
   }
 
   // Delete refreshToken in db
@@ -20,7 +20,7 @@ const logout = async (req, res) => {
   //console.log(result);
 
   res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
-  res.sendStatus(204);
+  res.status(200).json({ message: "Logout successful" });
 };
 
 module.exports = { logout };
