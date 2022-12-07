@@ -1,20 +1,8 @@
 "use strict";
 
-// =========================
-// Get Environment Variables
-// =========================
-const path = require("path");
-const rootDir = path.resolve(__dirname, ".");
-const env = require("dotenv").config({ path: `${rootDir}/.env` }).parsed;
-
-if (!env) {
-  console.log("Environment variables file not found");
-}
-
 // ==========================
 // General Require Statements
 // ==========================
-const jwt = require("jsonwebtoken");
 const { Types } = require("mongoose");
 const { userModel } = require("../models/User");
 const { commentModel } = require("../models/Comment");
@@ -23,7 +11,7 @@ const { listedSongModel } = require("../models/ListedSong");
 // ==============================
 // Endpoints for Posting Comments
 // ==============================
-const postComment = async (req, res, next) => {
+const postComment = async (req, res) => {
   let listingId;
   try {
     listingId = new Types.ObjectId(req.params.id);
@@ -60,6 +48,33 @@ const postComment = async (req, res, next) => {
   }
 };
 
+const getComment = async (req, res) => {
+  let commentID = req.params.id;
+  if(!commentID){
+    return res.status(400).json({message: "No ID provided"})
+  }
+  try{
+    const queriedComment = await commentModel.findById(commentID).exec();
+    return res.status(200).json({result: queriedComment, message: "Success"})
+  } catch(error){
+    console.log(error);
+    return res.status(500).json({ result: [], message: "Error getting comment" });
+  }
+}
+
+const getComments = async (req,res) => {
+  try{
+    const queriedComments = await commentModel.find({}).exec();
+    return res.status(200).json({result: queriedComments, message: "Success"})
+  } catch(error){
+    console.log(err);
+    return res.status(500).json({ result: [], message: "Error getting comments" });
+  }
+}
+
+
 module.exports = {
   postComment,
+  getComment,
+  getComments,
 };
