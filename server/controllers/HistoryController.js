@@ -1,4 +1,3 @@
-const mongoose = require("mongoose");
 const ROLES_LIST = require("../config/RolesList");
 const { historyModel } = require("../models/History");
 const { userModel } = require("../models/User");
