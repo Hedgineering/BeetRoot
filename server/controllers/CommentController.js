@@ -88,9 +88,62 @@ const getComments = async (req, res) => {
   }
 };
 
+const updateComment = async (req, res) => {
+  try {
+    let { commentid, comment } = req.body;
+    if (!commentid || !comment) {
+      return res
+        .status(400)
+        .json({ message: "Comment ID and comment are required" });
+    }
+    //Checks if comment exists
+    let commentToUpdate = await commentModel.findById(commentid).exec();
+    if (!commentToUpdate) {
+      return res
+        .status(400)
+        .json({ result: null, message: "invalid comment ID" });
+    }
+    //Get user who posted
+    let originalPoster = await userModel.findOne({ username: req.user }).exec();
+    if (!originalPoster) {
+      return res.status(400).json({ result: null, message: "invalid User ID" });
+    }
+    //Gets all roles from database
+    let clearanceLevel = await roleModel.findById(originalPoster["roles"][0]);
+    if (!clearanceLevel) {
+      return res.status(400).json({ result: null, message: "invalid Role ID" });
+    }
+    //Allow original poster or admin to edit comment
+    if (
+      String(commentToUpdate.postedBy) == String(originalPoster["_id"]) ||
+      clearanceLevel["clearanceLevel"] == 2
+    ) {
+      let updatedComment = await commentModel
+        .findByIdAndUpdate(
+          commentid,
+          { userid: originalPoster._id, message: comment },
+          { new: true }
+        )
+        .exec();
+      return res
+        .status(200)
+        .json({ result: updatedComment, message: "Success" });
+    }
+    //Rejection message for users without correct permissions
+    return res
+      .status(400)
+      .json({ result: null, message: "You have no rights to edit comment" });
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ result: null, message: "Error updating comment" });
+  }
+};
 
 module.exports = {
   postComment,
   getComment,
   getComments,
+  updateComment,
 };
