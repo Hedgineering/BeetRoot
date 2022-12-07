@@ -5,6 +5,7 @@
 // ==========================
 const { Types } = require("mongoose");
 const { userModel } = require("../models/User");
+const { roleModel } = require("../models/Role");
 const { commentModel } = require("../models/Comment");
 const { listedSongModel } = require("../models/ListedSong");
 
@@ -49,12 +50,17 @@ const postComment = async (req, res) => {
 };
 
 const getComment = async (req, res) => {
+  //Check if commentID is provided
   let commentID = req.params.id;
   if (!commentID) {
     return res.status(400).json({ message: "No ID provided" });
   }
   try {
+    // Get comment from database
     const queriedComment = await commentModel.findById(commentID).exec();
+    if (!queriedComment) {
+      return res.status(400).json({ error: "No such comment" });
+    }
     return res.status(200).json({ result: queriedComment, message: "Success" });
   } catch (error) {
     console.log(error);
@@ -66,7 +72,11 @@ const getComment = async (req, res) => {
 
 const getComments = async (req, res) => {
   try {
+    // Get comments from database
     const queriedComments = await commentModel.find({}).exec();
+    if (!queriedComments) {
+      return res.status(400).json({ error: "No comments in database" });
+    }
     return res
       .status(200)
       .json({ result: queriedComments, message: "Success" });
