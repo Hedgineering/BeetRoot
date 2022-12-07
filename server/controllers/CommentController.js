@@ -141,9 +141,56 @@ const updateComment = async (req, res) => {
   }
 };
 
+const deleteComment = async (req, res) => {
+  //Checks if ID is provided
+  const commentID = req.body.commentid;
+  if (!commentID) {
+    return res.status(400).json({ message: "No ID provided" });
+  }
+  try {
+    //Checks if comment exists in database
+    let commentExists = await commentModel.findById(commentID);
+    if (!commentExists) {
+      return res
+        .status(400)
+        .json({ result: null, message: "invalid comment ID" });
+    }
+    //Get original poster of comment
+    let originalPoster = await userModel.findOne({ username: req.user }).exec();
+    if (!originalPoster) {
+      return res.status(400).json({ result: null, message: "invalid User ID" });
+    }
+    //Get list of roles
+    let clearanceLevel = await roleModel.findById(originalPoster["roles"][0]);
+    if (!clearanceLevel) {
+      return res.status(400).json({ result: null, message: "invalid Role ID" });
+    }
+    //Allows original poster or admin to delete comment
+    if (
+      String(commentExists.postedBy) == String(originalPoster["_id"]) ||
+      clearanceLevel["clearanceLevel"] == 2
+    ) {
+      const deleteComment = await commentModel
+        .findByIdAndDelete(commentID)
+        .exec();
+      return res.status(200).json({ result: null, message: "Success" });
+    }
+    //Rejection message for users without correct permissions
+    return res
+      .status(400)
+      .json({ result: null, message: "You have no rights to delete" });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ result: [], message: "Error deleting comment" });
+  }
+};
+
 module.exports = {
   postComment,
   getComment,
   getComments,
   updateComment,
+  deleteComment,
 };
