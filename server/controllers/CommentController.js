@@ -50,27 +50,33 @@ const postComment = async (req, res) => {
 
 const getComment = async (req, res) => {
   let commentID = req.params.id;
-  if(!commentID){
-    return res.status(400).json({message: "No ID provided"})
+  if (!commentID) {
+    return res.status(400).json({ message: "No ID provided" });
   }
-  try{
+  try {
     const queriedComment = await commentModel.findById(commentID).exec();
-    return res.status(200).json({result: queriedComment, message: "Success"})
-  } catch(error){
+    return res.status(200).json({ result: queriedComment, message: "Success" });
+  } catch (error) {
     console.log(error);
-    return res.status(500).json({ result: [], message: "Error getting comment" });
+    return res
+      .status(500)
+      .json({ result: [], message: "Error getting comment" });
   }
-}
+};
 
-const getComments = async (req,res) => {
-  try{
+const getComments = async (req, res) => {
+  try {
     const queriedComments = await commentModel.find({}).exec();
-    return res.status(200).json({result: queriedComments, message: "Success"})
-  } catch(error){
+    return res
+      .status(200)
+      .json({ result: queriedComments, message: "Success" });
+  } catch (error) {
     console.log(err);
-    return res.status(500).json({ result: [], message: "Error getting comments" });
+    return res
+      .status(500)
+      .json({ result: [], message: "Error getting comments" });
   }
-}
+};
 
 
 module.exports = {
