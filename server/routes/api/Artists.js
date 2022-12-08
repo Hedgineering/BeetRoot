@@ -7,16 +7,16 @@ const {
   getArtist, 
   createArtist, 
   updateArtist, 
-  addUsersToArtist,
-  deleteArtist
+  addSongToArtist,
+  deleteSongFromArtist,
 } = require("../../controllers/ArtistController");
 
 router.route("/")
   .get(getArtists)
-  .post(verifyRoles(ROLES_LIST.ADMIN), createArtist)
-  .put(verifyRoles(ROLES_LIST.ADMIN), updateArtist)
-  .patch(verifyRoles(ROLES_LIST.ADMIN), addUsersToArtist)
-  .delete(verifyRoles(ROLES_LIST.ADMIN), deleteArtist);
+  .post(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), createArtist)
+  .put(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), updateArtist)
+  .patch(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), addSongToArtist)
+  .delete(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), deleteSongFromArtist);
 
 router.route("/:id")
   .get(getArtist);

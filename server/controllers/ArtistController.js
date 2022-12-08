@@ -1,6 +1,8 @@
-const mongoose = require("mongoose");
-const { userModel } = require("../models/User");
+const ROLES_LIST = require("../config/RolesList");
 const { artistModel } = require("../models/Artist");
+const { userModel } = require("../models/User");
+const { genreModel } = require("../models/Genre");
+const { songModel } = require("../models/Song");
 
 /**
  * Gets list of existing Artists
@@ -11,204 +13,290 @@ const { artistModel } = require("../models/Artist");
  */
 const getArtists = async (req, res) => {
   try {
-    const Artists = await artistModel.find({}).exec();
-    return res.status(200).json({ result: Artists, message: "Success" });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ result: [], message: "Error getting Artists" });
+    const artists = await artistModel.find({}).exec();
+    if (!artists || artists.length === 0) {
+      res.status(404).json({ result: [], message: "No artists found" });
+    }
+    res.status(200).json({ result: artists, message: "Artists found" });
+  } catch (error) {
+    res.status(500).json({ result: null, message: "Error finding artists" });
   }
 };
 
 /**
- * Takes request with Artist id and returns Artist object if it exists, null otherwise
+ * Takes request with artist id and returns artist object if it exists, null otherwise
+ * Expects artist id as url parameter:
+ *
+ * Ex: www.beetroot.com/api/artist/5f9f1b9f9f1b9f1b9f1b9f1b
  *
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
- * @returns json object with message and queried Artist
+ * @returns json object with message and queried artist
  */
 const getArtist = async (req, res) => {
+  const artistId = req.params.id;
+  if (!artistId) {
+    res.status(400).json({ result: null, message: "Artist id not provided" });
+  }
+
   try {
-    const Artist = await artistModel.findById(req.params.id).exec();
-    return res.status(200).json({ result: Artist, message: "Success" });
-  } catch (err) {
-    console.log(err);
-    return res
-      .status(500)
-      .json({ result: null, message: "Error getting Artist" });
+    const artist = await artistModel.findById(artistId).exec();
+    if (!artist) {
+      res.status(404).json({ result: null, message: "Artist not found" });
+    }
+    res.status(200).json({ result: artist, message: "Artist found" });
+  } catch (error) {
+    res.status(500).json({ result: null, message: "Error finding artist" });
   }
 };
 
 /**
- * Takes request with Artist username,Artist user field, Artist genre, and Artist songs and returns Artist object created
+ * Takes request with desired artist username, user id, and genre id
+ * and creates artist object. Admins may create artist objects for other users,
+ * but artists may only create artist objects for themselves.
  *
  * Expects:
  * ```json
- * { "username": String, "user": mongoose.SchemaTypes.ObjectId, "genre": mongoose.SchemaTypes.ObjectId,"songs":[{ type: mongoose.SchemaTypes.ObjectId, ref: "Song" }]}
+ * { "username": String, "userId": String, "genreId": String}
  * ```
- * username should be a string, user should have an object id of user,genre should have an object id of genre,Songs should be an array of objects with object id of song, all are required
+ *
+ * username should be a String, required
+ *
+ * userId should be a user object id in String format, required
+ *
+ * genreId should be a genre object id in String format, required
  *
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
- * @returns json object with message and created Artist
+ * @returns json object with message and created artist object
  */
 const createArtist = async (req, res) => {
+  const { username, userId, genreId } = req.body;
+  const { user, roles } = req;
+  if (!username || !userId || !genreId || !user || !roles) {
+    res.status(400).json({ result: null, message: "Missing required fields" });
+  }
+  if (!(await allowedAccess(user, roles, userId))) {
+    res.status(403).json({ result: null, message: "User not authorized" });
+  }
+
+  // ensure genre exists in database
+  const genre = await genreModel.findById(genreId).exec();
+  if (!genre) {
+    return res
+      .status(404)
+      .json({ result: null, message: `Genre ${genreId} not found` });
+  }
+
   try {
-    let { username,user,genre,songs } = req.body;
-    if (!username || !user ||!genre ||!songs) {
-      return res
-        .status(400)
-        .json({
-          result: null,
-          message: "Artist username,Artist user field, Artist genre, and Artist songs  are required",
-        });
-    }
-    const Artist = await artistModel.create({ username,user,genre,songs});
-    return res.status(200).json({ result: Artist, message: "Success" });
-  } catch (err) {
-    console.log(err);
+    const createdArtist = await artistModel.create({
+      username,
+      user: userId,
+      genre: genreId,
+      songs: [],
+    });
+    return res
+      .status(201)
+      .json({ result: createdArtist, message: "Artist created" });
+  } catch (error) {
     return res
       .status(500)
-      .json({ result: null, message: "Error creating Artist" });
+      .json({ result: null, message: "Error creating artist" });
   }
 };
 
 /**
- * Takes request with Artist username,Artist user field, Artist genre, and Artist songs 
- * returns Artist object updated as result.
- *
- * Replaces existing Artist with new Artist created with passed Takes request with Artist username,Artist user field, Artist genre, and Artist songs 
+ * Takes request with artistId, username, userId, genre and songs,
+ * and returns artist object updated as result.
+ * Replaces existing artist with new artist created with passed parameters.
  *
  * Expects:
  * ```json
- * { "id":String, "username": String, "user": mongoose.SchemaTypes.ObjectId, "genre": mongoose.SchemaTypes.ObjectId,"songs":[{ type: mongoose.SchemaTypes.ObjectId, ref: "Song" }]}
+ * { "artistId": String, "username": String, "userId": String, "genreId": String, "songs": [String] }
  * ```
- * id should be an object id in String format, required
  *
- * username should be a string, user should have an object id of user,genre should have an object id of genre,Songs should be an array of objects with object id of song, all are required
+ * artistId should be a artist object id in String format, required
+ *
+ * username should be a String, required
+ *
+ * userId should be a user object id in String format, required
+ *
+ * genreId should be a genre object id in String format, required
+ *
+ * songs should be an array of song object ids in String format, can be empty array, required
  *
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
- * @returns json object with message and updated Artist
+ * @returns json object with message and updated artist
  */
 const updateArtist = async (req, res) => {
-  try {
-    let { id, username,user,genre,songs } = req.body;
-    if (!username || !user ||!genre ||!songs) {
-      return res
-        .status(400)
-        .json({
-          result: null,
-          message: "Artist username,Artist user field, Artist genre, and Artist songs  are required",
-        });
-    }
-    const ArtistToUpdate = await artistModel.findById(id).exec();
-    if (!ArtistToUpdate) {
-      return res
-        .status(400)
-        .json({ result: null, message: `Invalid Artist id ${id}` });
-    }
-    const Artist = await artistModel
-      .findByIdAndUpdate(id, { username,user,genre,songs }, { new: true })
-      .exec();
-    return res.status(200).json({ result: Artist, message: "Success" });
-  } catch (err) {
-    console.log(err);
-    return res
-      .status(500)
-      .json({ result: null, message: "Error updating Artist" });
-  }
-};
+  const { artistId, username, userId, genreId, songs } = req.body;
+  const { user, roles } = req;
 
-/**
- * Takes request with Artist name and
- * returns json object with message of success or failure
- * Applies Artist to all users corresponding to passed usernames
- *
- * Expects:
- * ```json
- * { "id": String, "usernames": [String] }
- * ```
- * id should be an object id for the Artist to be applied in String format, required
- *
- * usernames should be an array of strings, required
- *
- * @param {HttpRequest} req request object
- * @param {HttpResponse} res response object
- * @returns json object with message and updated genre
- */
-const addUsersToArtist = async (req, res) => {
   try {
-    let { id, usernames } = req.body;
-    if (!id || !usernames) {
+    const artist = await artistModel.findById(artistId).exec();
+    if (!artist) {
       return res
-        .status(400)
-        .json({ result: null, message: "Artist id and usernames are required" });
+        .status(404)
+        .json({ result: null, message: "Artist not found" });
     }
-    // ensure Artist exists
-    const Artist = await artistModel.findById(id).exec();
-    if (!Artist) {
+    if (!(await allowedAccess(user, roles, artist.user))) {
       return res
-        .status(400)
-        .json({ result: null, message: `Invalid Artist id ${id}` });
+        .status(403)
+        .json({ result: null, message: "User not authorized" });
     }
-    // ensure users exist and add Artist if they do
-    for (let i = 0; i < usernames.length; i++) {
-      const user = await userModel.findOne({ username: usernames[i] }).exec();
-      if (!user) {
+
+    // ensure genre exists in database
+    const genre = await genreModel.findById(genreId).exec();
+    if (!genre) {
+      return res
+        .status(404)
+        .json({ result: null, message: `Genre ${genreId} not found` });
+    }
+
+    // ensure songs exist in database
+    for (let i = 0; i < songs.length; i++) {
+      const song = await songModel.findById(songs[i]).exec();
+      if (!song) {
         return res
-          .status(400)
-          .json({ result: null, message: `Invalid username ${usernames[i]}` });
+          .status(404)
+          .json({ result: null, message: `Song ${songs[i]} not found` });
       }
-      user.Artists.push(Artist._id);
-      await user.save();
     }
-  } catch (err) {
-    console.log(err);
+
+    const updatedArtist = await artistModel
+      .findByIdAndUpdate(
+        artistId,
+        {
+          username,
+          user: userId,
+          genre: genreId,
+          songs,
+        },
+        { new: true }
+      )
+      .exec();
+    return res
+      .status(200)
+      .json({ result: updatedArtist, message: "Artist updated" });
+  } catch (error) {
     return res
       .status(500)
-      .json({ result: null, message: "Error adding users to Artist" });
+      .json({ result: null, message: "Error updating artist" });
   }
 };
 
 /**
- * Takes request with Artist id of Artist to delete
- *
+ * Takes request with artistId and song, and returns artist object updated as result
+ * Adds song to artist object with artistId passed in. 
+ * 
  * Expects:
  * ```json
- * { "id": String }
+ * { "artistId": String, "song": String }
  * ```
- * id is required, with id being the object id of the Artist to delete in String format
- *
+ * 
+ * artistId should be a artist object id in String format, required
+ * 
+ * song should be a song object id in String format, required
+ * 
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
- * @returns json object with message
+ * @returns artist object with updated songs array
  */
-const deleteArtist = async (req, res) => {
+const addSongToArtist = async (req, res) => {
+  const { artistId, song } = req.body;
+  const { user, roles } = req;
+
   try {
-    let { id } = req.body;
-    if (!id) {
-      return res
-        .status(400)
-        .json({ result: null, message: "Artist id is required" });
+    const artist = await artistModel.findById(artistId).exec();
+    if (!artist) {
+      return res.status(404).json({ result: null, message: "Artist not found" });
     }
-    // ensure Artist exists
-    const Artist = await artistModel.findById(id).exec();
-    if (!Artist) {
-      return res
-        .status(400)
-        .json({ result: null, message: `Invalid Artist id ${id}` });
+    if (!(await allowedAccess(user, roles, artist.user))) {
+      return res.status(403).json({ result: null, message: "User not authorized" });
     }
-    // remove Artist from all users with Artist in Artists array
-    await userModel.updateMany({ Artists: id }, { $pull: { Artists: id } }).exec();
-    // delete Artist
-    await ArtistModel.findByIdAndDelete(id).exec();
-    return res.status(200).json({ result: null, message: "Success" });
+    const songObj = await songModel.findById(song).exec();
+    if (!songObj) {
+      return res.status(404).json({ result: null, message: `Song ${song} not found` });
+    }
+
+    // add song to front of artist's songs array
+    artist.songs.unshift(song);
+    const updatedArtist = await artist.save();
+    return res.status(200).json({ result: updatedArtist, message: "Song added to artist" });
+
+  } catch (error) {
+    return res.status(500).json({ result: null, message: "Error finding artist" });
+  }
+};
+
+/**
+ * Deletes song from songs array of artist with artistId passed in request
+ * 
+ * Expects:
+ * ```json
+ * { "artistId": String, "song": String }
+ * ```
+ * 
+ * artistId should be a artist object id in String format, required
+ * 
+ * song should be a song object id in String format, required
+ * 
+ * @param {HttpRequest} req request object
+ * @param {HttpResponse} res response object
+ * @returns json object with message and updated artist
+ */
+const deleteSongFromArtist = async (req, res) => {
+  const { artistId, song } = req.body;
+  const { user, roles } = req;
+
+  try {
+    const artist = await artistModel.findById(artistId).exec();
+    if (!artist) {
+      return res.status(404).json({ result: null, message: "Artist not found" });
+    }
+    if (!(await allowedAccess(user, roles, artist.user))) {
+      return res.status(403).json({ result: null, message: "User not authorized" });
+    }
+    const songObj = await songModel.findById(song).exec();
+    if (!songObj) {
+      return res.status(404).json({ result: null, message: `Song ${song} not found` });
+    }
+
+    // remove song from artist's songs array
+    artist.songs = artist.songs.filter((s) => s !== song);
+    const updatedArtist = await artist.save();
+    return res.status(200).json({ result: updatedArtist, message: "Song deleted from artist" });
+  } catch (error) {
+    return res.status(500).json({ result: null, message: "Error finding artist" });
+  }
+};
+
+/**
+ * Allows user to access artist object if they are admin or owner of the artist object
+ *
+ * @param {String} username username of the current user tryting to access resource
+ * @param {String[]} roles roles of the current user tryting to access resource
+ * @param {String} artistUserId object id of the artist resource in string format
+ * @returns {Boolean} true if user has access to the resource, false otherwise
+ */
+const allowedAccess = (username, roles, artistUserId) => {
+  if (!artistUserId || !username) {
+    return false;
+  }
+  try {
+    const currentUser = userModel.findOne({ username }).exec();
+    if (!currentUser) {
+      return false;
+    }
+    if (!roles.includes(ROLES_LIST.ADMIN) && currentUser._id != artistUserId) {
+      return false;
+    }
   } catch (err) {
     console.log(err);
-    return res
-      .status(500)
-      .json({ result: null, message: "Error deleting Artist" });
+    return false;
   }
+  return true;
 };
 
 module.exports = {
@@ -216,6 +304,6 @@ module.exports = {
   getArtist,
   createArtist,
   updateArtist,
-  addUsersToArtist,
-  deleteArtist,
+  addSongToArtist,
+  deleteSongFromArtist,
 };
