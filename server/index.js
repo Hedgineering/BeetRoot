@@ -255,7 +255,7 @@ app.use("/api/history", require("./routes/api/Histories")); // TODO: test this e
 // app.use("/api/playlist", require("./routes/api/Playlists"));
 // app.use("/api/purchasedsong", require("./routes/api/PurchasedSongs"));
 app.use("/api/role", require("./routes/api/Roles")); // TODO: test this endpoint
-// app.use("/api/song", require("./routes/api/Songs"));
+app.use("/api/song", require("./routes/api/Songs"));
 app.use("/api/user", require("./routes/api/Users"));
 
 // Catch all for 404
