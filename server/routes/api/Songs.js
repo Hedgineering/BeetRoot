@@ -9,7 +9,7 @@ const {
   updateSong, 
   updateSongProperties,
   deleteSong 
-} = require("../../controllers/SongController");
+} = require("../../controllers/SongController.js");
 
 router.route("/")
   .get(getSongs)
