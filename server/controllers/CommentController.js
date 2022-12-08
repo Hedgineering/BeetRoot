@@ -130,12 +130,10 @@ const updateComment = async (req, res) => {
         .json({ result: updatedComment, message: "Success" });
     }
     //Rejection message for users without correct permissions
-    return res
-      .status(403)
-      .json({
-        result: null,
-        message: "Access Denied; You don't have permission to alter comment",
-      });
+    return res.status(403).json({
+      result: null,
+      message: "Access Denied; You don't have permission to alter comment",
+    });
   } catch (err) {
     console.log(err);
     return res
@@ -173,12 +171,10 @@ const updateCommentState = async (req, res) => {
       return res.status(400).json({ result: null, message: "invalid Role ID" });
     }
     if (clearanceLevel["clearanceLevel"] != 2) {
-      return res
-        .status(403)
-        .json({
-          result: null,
-          message: "Access Denied; You don't have permission to alter comment",
-        });
+      return res.status(403).json({
+        result: null,
+        message: "Access Denied; You don't have permission to alter comment",
+      });
     }
     let updatedComment = await commentModel
       .updateOne({ _id: commentid }, { flagged: flagStatus })
@@ -227,12 +223,10 @@ const deleteComment = async (req, res) => {
       return res.status(200).json({ result: null, message: "Success" });
     }
     //Rejection message for users without correct permissions
-    return res
-      .status(403)
-      .json({
-        result: null,
-        message: "Access Denied; You don't have permission to alter comment",
-      });
+    return res.status(403).json({
+      result: null,
+      message: "Access Denied; You don't have permission to alter comment",
+    });
   } catch (error) {
     console.log(error);
     return res
