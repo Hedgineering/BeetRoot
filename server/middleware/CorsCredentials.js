@@ -8,7 +8,7 @@
  * Run this before the cors() middleware.
  */
 
-const allowedOrigins = require("../config/allowedOrigins");
+const allowedOrigins = require("../config/AllowedOrigins");
 
 const credentials = (req, res, next) => {
   const origin = req.headers.origin;
