@@ -103,7 +103,7 @@ const updateComment = async (req, res) => {
         .status(400)
         .json({ result: null, message: "invalid comment ID" });
     }
-    //Get user who posted
+    //Get user who requesting edit
     let originalPoster = await userModel.findOne({ username: req.user }).exec();
     if (!originalPoster) {
       return res.status(400).json({ result: null, message: "invalid User ID" });
@@ -131,8 +131,59 @@ const updateComment = async (req, res) => {
     }
     //Rejection message for users without correct permissions
     return res
-      .status(400)
-      .json({ result: null, message: "You have no rights to edit comment" });
+      .status(403)
+      .json({
+        result: null,
+        message: "Access Denied; You don't have permission to alter comment",
+      });
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ result: null, message: "Error updating comment" });
+  }
+};
+
+const updateCommentState = async (req, res) => {
+  try {
+    const { commentid, flagStatus } = req.body;
+    if (!flagStatus || !commentid) {
+      console.log(commentid);
+      console.log(flagStatus);
+      console.log(roles);
+      return res
+        .status(400)
+        .json({ result: null, message: "You need to fill all parameters" });
+    }
+    //Checks if comment exists
+    let commentToUpdate = await commentModel.findById(commentid).exec();
+    if (!commentToUpdate) {
+      return res
+        .status(400)
+        .json({ result: null, message: "invalid comment ID" });
+    }
+    //Get user who requesting edit
+    let originalPoster = await userModel.findOne({ username: req.user }).exec();
+    if (!originalPoster) {
+      return res.status(400).json({ result: null, message: "invalid User ID" });
+    }
+    //Gets all roles from database
+    let clearanceLevel = await roleModel.findById(originalPoster["roles"][0]);
+    if (!clearanceLevel) {
+      return res.status(400).json({ result: null, message: "invalid Role ID" });
+    }
+    if (clearanceLevel["clearanceLevel"] != 2) {
+      return res
+        .status(403)
+        .json({
+          result: null,
+          message: "Access Denied; You don't have permission to alter comment",
+        });
+    }
+    let updatedComment = await commentModel
+      .updateOne({ _id: commentid }, { flagged: flagStatus })
+      .exec();
+    return res.status(200).json({ result: updatedComment, message: "Success" });
   } catch (err) {
     console.log(err);
     return res
@@ -177,8 +228,11 @@ const deleteComment = async (req, res) => {
     }
     //Rejection message for users without correct permissions
     return res
-      .status(400)
-      .json({ result: null, message: "You have no rights to delete" });
+      .status(403)
+      .json({
+        result: null,
+        message: "Access Denied; You don't have permission to alter comment",
+      });
   } catch (error) {
     console.log(error);
     return res
@@ -193,4 +247,5 @@ module.exports = {
   getComments,
   updateComment,
   deleteComment,
+  updateCommentState,
 };
