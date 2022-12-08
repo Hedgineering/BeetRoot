@@ -28,7 +28,7 @@ const getHistories = async (req, res) => {
  * 
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
- * @returns json object with message and queried genre
+ * @returns json object with message and queried history
  */
 const getHistory = async (req, res) => {
   try {
