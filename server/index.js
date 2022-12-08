@@ -242,10 +242,10 @@ app.use("/logout", require("./routes/Logout"));
 // Protected Endpoints -------------
 // middleware to verify JWT token, 
 // only authenticated users can access protected endpoints
-app.use(verifyJWT); // Identity has not been tampered with
+app.use(verifyJWT);
 
-// app.use("/api/album", require("./routes/api/Albums"));
-// app.use("/api/artist", require("./routes/api/Artists"));
+//app.use("/api/album", require("./routes/api/Albums"));
+app.use("/api/artist", require("./routes/api/Artists"));
 app.use("/api/comment", require("./routes/api/Comments")); // TODO: test this endpoint
 // app.use("/api/format", require("./routes/api/Formats"));
 app.use("/api/genre", require("./routes/api/Genres"));
