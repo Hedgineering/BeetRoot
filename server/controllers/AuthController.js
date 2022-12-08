@@ -136,7 +136,7 @@ const login = async (req, res) => {
         },
       },
       accessSecret,
-      { expiresIn: 60 }
+      { expiresIn: 5*60 }
     );
 
     const refreshSecret =
