@@ -23,7 +23,7 @@ const getGenres = async (req, res) => {
  * Takes request with genre id and returns genre object if it exists, null otherwise
  * Expects genre id as url parameter:
  * 
- * Ex: www.beetroot.com/api/genres/5f9f1b9f9f1b9f1b9f1b9f1b
+ * Ex: www.beetroot.com/api/genre/5f9f1b9f9f1b9f1b9f1b9f1b
  * 
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object

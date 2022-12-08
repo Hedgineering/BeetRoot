@@ -4,6 +4,7 @@ const historySchema = new mongoose.Schema({
   userId: {
     type: mongoose.SchemaTypes.ObjectID,
     required: true,
+    ref: "User",
   },
   streams: {
     type: [
