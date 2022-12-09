@@ -14,9 +14,9 @@ const {
 router.route("/")
   .get(getSongs)
   .post(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), createSong)
-  .put(verifyRoles(ROLES_LIST.ADMIN), updateSong)
+  .put(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), updateSong)
   .patch(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), updateSongProperties)
-  .delete(verifyRoles(ROLES_LIST.ADMIN), deleteSong);
+  .delete(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), deleteSong);
 
 router.route("/:id")
   .get(getSong);

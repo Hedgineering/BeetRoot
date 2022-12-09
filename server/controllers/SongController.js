@@ -10,12 +10,12 @@ const ROLES_LIST = require("../config/RolesList");
  *
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
- * @returns json object with message and list of Songs
+ * @returns json object with message and result containing list of songs if found
  */
 const getSongs = async (req, res) => {
   try {
-    const Songs = await songModel.find({}).exec();
-    return res.status(200).json({ result: Songs, message: "Success" });
+    const songs = await songModel.find({}).exec();
+    return res.status(200).json({ result: songs, message: "Success" });
   } catch (err) {
     console.log(err);
     return res.status(500).json({ result: [], message: "Error getting Songs" });
@@ -26,16 +26,22 @@ const getSongs = async (req, res) => {
  * Takes request with Song id and returns Song object if it exists, null otherwise
  * Expects Song id as url parameter:
  *
- * Ex: www.beetroot.com/api/Song/5f9f1b9f9f1b9f1b9f1b9f1b
+ * Ex: www.beetroot.com/api/song/5f9f1b9f9f1b9f1b9f1b9f1b
  *
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
- * @returns json object with message and queried Song
+ * @returns json object with message and queried song
  */
 const getSong = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res
+      .status(400)
+      .json({ result: null, message: "Song id is required" });
+  }
   try {
-    const Song = await songModel.findById(req.params.id).exec();
-    return res.status(200).json({ result: Song, message: "Success" });
+    const song = await songModel.findById(id).exec();
+    return res.status(200).json({ result: song, message: "Success" });
   } catch (err) {
     console.log(err);
     return res
@@ -45,11 +51,38 @@ const getSong = async (req, res) => {
 };
 
 /**
- * Takes request with Song name and returns genre object created
+ * Takes request with song artist, genre, title, duration,
+ * explicit, license, description, published, and
+ * coverArt url and creates a new song, adds it to the
+ * artist's songs, and songs associated with the passed genre
+ * and returns song object created.
+ *
  * Expects:
  * ```json
- * { "name": String, "songs": [String] }
+ * {
+ *  "artist": String,
+ *  "genre": String,
+ *  "title": String,
+ *  "duration": Number,
+ *  "explicit": Boolean,
+ *  "license": String,
+ *  "description": String,
+ *  "published": Date,
+ *  "coverArt": String,
+ * }
  * ```
+ * artist and genre should be object ids in String format, required
+ *
+ * title, license, and description should be Strings, required
+ *
+ * duration should be the duration in seconds of the song as a Number, required
+ *
+ * explicit should be true if the song contains explicit content, false otherwise, required
+ *
+ * published should be the date the song was published as a Date, required
+ *
+ * coverArt should be a url to the cover art of the song as a String, required
+ *
  * songs should be an array of song ids in String format, can be empty
  *
  * @param {HttpRequest} req request object
@@ -68,13 +101,12 @@ const createSong = async (req, res) => {
       description,
       published,
       coverArt,
-      likes,
-      shares,
-      purchases,
-      streams,
     } = req.body;
-    console.log(req.body);
-    console.log(req);
+    const likes = 0,
+      shares = 0,
+      purchases = 0,
+      streams = 0;
+
     if (
       !artist ||
       !genre ||
@@ -83,18 +115,64 @@ const createSong = async (req, res) => {
       !explicit ||
       !description ||
       !published ||
-      !coverArt ||
-      !likes ||
-      !shares ||
-      !purchases ||
-      !streams
+      !coverArt
     ) {
-      return res
-        .status(400)
-        .json({ result: null, message: "Song name is required" });
+      return res.status(400).json({ result: null, message: "Missing inputs" });
     }
 
-    const Song = await songModel.create({
+    if (
+      !mongoose.Types.ObjectId.isValid(artist) ||
+      !mongoose.Types.ObjectId.isValid(genre)
+    ) {
+      return res.status(400).json({ result: null, message: "Invalid inputs" });
+    }
+
+    const Artist = await artistModel.findById(artist).exec();
+    if (!Artist) {
+      return res
+        .status(400)
+        .json({ result: null, message: "Invalid artist id" });
+    }
+
+    const Genre = await genreModel.findById(genre).exec();
+    if (!Genre) {
+      return res
+        .status(400)
+        .json({ result: null, message: "Invalid genre id" });
+    }
+
+    const {user, roles} = req;
+    if(!user || !roles) {
+      return res.status(401).json({result: null, message: "Unauthorized"});
+    }
+    const User = userModel.findOne({username: user}).exec();
+    if(!User) {
+      return res.status(401).json({result: null, message: "Invalid user, unauthorized"});
+    }
+
+    if(!roles.includes(ROLES_LIST.ADMIN) 
+    && !(Artist.user.toString() === User._id.toString())) {
+      return res.status(401).json({result: null, message: "Unauthorized, you may not create a song under another artist's name"});
+    }
+
+    // check if song with same artist and title and description already exists
+    const existingSong = await songModel
+      .findOne({
+        artist,
+        title,
+        description,
+      })
+      .exec();
+    if (existingSong) {
+      return res
+        .status(400)
+        .json({
+          result: null,
+          message: "Song with same name, title, and description already exists",
+        });
+    }
+
+    const song = await songModel.create({
       artist,
       genre,
       title,
@@ -109,7 +187,16 @@ const createSong = async (req, res) => {
       purchases,
       streams,
     });
-    return res.status(200).json({ result: Song, message: "Success" });
+
+    // add song to artist's songs
+    Artist.songs.unshift(song);
+    const updatedArtist = await Artist.save();
+
+    // add song to genre's songs
+    Genre.songs.unshift(song);
+    const updatedGenre = await Genre.save();
+
+    return res.status(200).json({ result: song, message: "Success" });
   } catch (err) {
     console.log(err);
     return res
@@ -119,14 +206,44 @@ const createSong = async (req, res) => {
 };
 
 /**
- * Takes request with Song name and returns Song object updated as result
- * Replaces existing Song with new Song created with passed name and songs
+ * Takes request with song artist, genre, title, duration,
+ * explicit, license, description, published, coverArt url 
+ * and updates the song with passed parameters,
+ * if the new artist is different, it adds the song to the new
+ * artist's songs, removes from old artist's songs, and 
+ * if the new genre is different, it adds it to the songs associated with the 
+ * newly passed genre, removes from old genre's songs
+ * and returns song object updated.
  *
  * Expects:
  * ```json
- * { "id": String, "name": String, "songs": [String] }
+ * {
+ *  "songId": String,
+ *  "artist": String,
+ *  "genre": String,
+ *  "title": String,
+ *  "duration": Number,
+ *  "explicit": Boolean,
+ *  "license": String,
+ *  "description": String,
+ *  "published": Date,
+ *  "coverArt": String,
+ * }
  * ```
- * id and name are required, with id being the object id of the Song to update in String format
+ * 
+ * songId should be the object id of the song to update as a String, required
+ * 
+ * artist and genre should be object ids in String format, required
+ *
+ * title, license, and description should be Strings, required
+ *
+ * duration should be the duration in seconds of the song as a Number, required
+ *
+ * explicit should be true if the song contains explicit content, false otherwise, required
+ *
+ * published should be the date the song was published as a Date, required
+ *
+ * coverArt should be a url to the cover art of the song as a String, required
  *
  * songs should be an array of song ids in String format, can be empty
  *
@@ -137,6 +254,7 @@ const createSong = async (req, res) => {
 const updateSong = async (req, res) => {
   try {
     let {
+      songId,
       artist,
       genre,
       title,
@@ -146,10 +264,6 @@ const updateSong = async (req, res) => {
       description,
       published,
       coverArt,
-      likes,
-      shares,
-      purchases,
-      streams,
     } = req.body;
     if (
       !artist ||
@@ -159,46 +273,67 @@ const updateSong = async (req, res) => {
       !explicit ||
       !description ||
       !published ||
-      !coverArt ||
-      !likes ||
-      !shares ||
-      !purchases ||
-      !streams
+      !coverArt
     ) {
       return res
         .status(400)
-        .json({ result: null, message: "Song name and id is required" });
+        .json({ result: null, message: "Invalid request inputs." });
     }
-    const SongToUpdate = await songModel.findById(id).exec();
-    if (!SongToUpdate) {
+    const songToUpdate = await songModel.findById(songId).exec();
+    if (!songToUpdate) {
       return res
         .status(400)
-        .json({ result: null, message: `Invalid Song id ${id}` });
+        .json({ result: null, message: `Invalid Song id ${songId}` });
     }
 
-    const newSong = await songModel
-      .findByIdAndUpdate(
-        id,
-        {
-          artist,
-          genre,
-          title,
-          duration,
-          explicit,
-          license,
-          description,
-          published,
-          coverArt,
-          likes,
-          shares,
-          purchases,
-          streams,
-        },
-        { new: true }
-      )
-      .exec();
+    // ensure user is admin or artist of song being edited
+    const {user, roles} = req;
+    if(!user || !roles) {
+      return res.status(401).json({result: null, message: "Unauthorized"});
+    }
+    const User = userModel.findOne({username: user}).exec();
+    if(!User) {
+      return res.status(401).json({result: null, message: "Invalid user, unauthorized"});
+    }
+    if(!(await canAccess(user, roles, songId))) {
+      return res.status(401).json({result: null, message: "Unauthorized, you may not edit this song"});
+    }
 
-    return res.status(200).json({ result: newSong, message: "Success" });
+    // if artist is different, remove song from old artist's songs and 
+    // add to new artist's songs
+    if (songToUpdate.artist.toString() !== artist) {
+      const oldArtist = await artistModel.findById(songToUpdate.artist).exec();
+      oldArtist.songs = oldArtist.songs.filter(song => song.toString() !== songId);
+      await oldArtist.save();
+      const newArtist = await artistModel.findById(artist).exec();
+      newArtist.songs.unshift(songId);
+      await newArtist.save();
+    }
+
+    // if genre is different, remove song from old genre's songs and 
+    // add to new genre's songs
+    if (songToUpdate.genre.toString() !== genre) {
+      const oldGenre = await genreModel.findById(songToUpdate.genre).exec();
+      oldGenre.songs = oldGenre.songs.filter(song => song.toString() !== songId);
+      await oldGenre.save();
+      const newGenre = await genreModel.findById(genre).exec();
+      newGenre.songs.unshift(songId);
+      await newGenre.save();
+    }
+
+    // update songToUpdate
+    songToUpdate.artist = artist;
+    songToUpdate.genre = genre;
+    songToUpdate.title = title;
+    songToUpdate.duration = duration;
+    songToUpdate.explicit = explicit;
+    songToUpdate.license = license;
+    songToUpdate.description = description;
+    songToUpdate.published = published;
+    songToUpdate.coverArt = coverArt;
+    const updatedSong = await songToUpdate.save();
+
+    return res.status(200).json({ result: updatedSong, message: "Success" });
   } catch (err) {
     console.log(err);
     return res
@@ -316,8 +451,16 @@ const deleteSong = async (req, res) => {
   }
 };
 
+/**
+ * Checks if a user can access a song to modify it
+ * 
+ * @param {String} username username of the user trying to access this resource
+ * @param {[String]} roles roles of the user trying to access this resource
+ * @param {String} songId id of the song to access
+ * @returns {Boolean} true if the user can access the song, false otherwise
+ */
 const canAccess = async (username, roles, songId) => {
-  if (!roles || !username || !songId) {
+  if (!username || !roles || !songId) {
     return false;
   }
 
