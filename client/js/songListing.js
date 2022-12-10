@@ -12,15 +12,15 @@ const price = document.querySelector("#price");
 listedSong = {
   creator: {
     //more stuff is here but keeping it simple
-    name: "Metro Boomin",
+    name: "Flytrap",
   },
   song: {
     genre: "638e8a6296fe394b65ad6038", //object id
-    name: "Superhero",
+    name: "Gentle Giants",
     duration: 200,
     explicit: true,
-    license: "example license",
-    description: "example description",
+    license: "MIT",
+    description: "A gentle giant flies through the sky",
     likes: 12344,
     shares: 1332,
     purchases: 1239,
