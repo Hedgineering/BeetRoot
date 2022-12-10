@@ -1,8 +1,11 @@
+"use strict";
+
 const mongoose = require("mongoose");
 const { artistModel } = require("../models/Artist");
 const { genreModel } = require("../models/Genre");
 const { userModel } = require("../models/User");
 const { songModel } = require("../models/Song");
+const { listedSongModel } = require("../models/ListedSong");
 const ROLES_LIST = require("../config/RolesList");
 
 /**
@@ -141,18 +144,28 @@ const createSong = async (req, res) => {
         .json({ result: null, message: "Invalid genre id" });
     }
 
-    const {user, roles} = req;
-    if(!user || !roles) {
-      return res.status(401).json({result: null, message: "Unauthorized"});
+    const { user, roles } = req;
+    if (!user || !roles) {
+      return res.status(401).json({ result: null, message: "Unauthorized" });
     }
-    const User = userModel.findOne({username: user}).exec();
-    if(!User) {
-      return res.status(401).json({result: null, message: "Invalid user, unauthorized"});
+    const User = userModel.findOne({ username: user }).exec();
+    if (!User) {
+      return res
+        .status(401)
+        .json({ result: null, message: "Invalid user, unauthorized" });
     }
 
-    if(!roles.includes(ROLES_LIST.ADMIN) 
-    && !(Artist.user.toString() === User._id.toString())) {
-      return res.status(401).json({result: null, message: "Unauthorized, you may not create a song under another artist's name"});
+    if (
+      !roles.includes(ROLES_LIST.ADMIN) &&
+      !(Artist.user.toString() === User._id.toString())
+    ) {
+      return res
+        .status(401)
+        .json({
+          result: null,
+          message:
+            "Unauthorized, you may not create a song under another artist's name",
+        });
     }
 
     // check if song with same artist and title and description already exists
@@ -164,12 +177,10 @@ const createSong = async (req, res) => {
       })
       .exec();
     if (existingSong) {
-      return res
-        .status(400)
-        .json({
-          result: null,
-          message: "Song with same name, title, and description already exists",
-        });
+      return res.status(400).json({
+        result: null,
+        message: "Song with same name, title, and description already exists",
+      });
     }
 
     const song = await songModel.create({
@@ -206,12 +217,165 @@ const createSong = async (req, res) => {
 };
 
 /**
+ * Takes request with song artist username, genre name, title, duration,
+ * explicit, license, description, published, coverArt image file,
+ * format, formatType, and price and creates a new song, adds it to the
+ * artist's songs, and songs associated with the passed genre and the format object
+ * and returns song object created.
+ *
+ * Expects:
+ * ```json
+ * {
+ *  "artist": String,
+ *  "genre": String,
+ *  "title": String,
+ *  "duration": Number,
+ *  "explicit": Boolean,
+ *  "license": String,
+ *  "description": String,
+ *  "published": Date,
+ *  "coverArt": File,
+ *  "format": File,
+ *  "formatType": String,
+ *  "price": Number
+ * }
+ * ```
+ * artist (username) and genre (name) should be Strings, required
+ *
+ * title, license, and description should be Strings, required
+ *
+ * duration should be the duration in seconds of the song as a Number, required
+ *
+ * explicit should be true if the song contains explicit content, false otherwise, required
+ *
+ * published should be the date the song was published as a Date, required
+ *
+ * coverArt should be a file (png), required
+ *
+ * songs should be an array of song ids in String format, can be empty
+ *
+ * format should be a file (mp3 or wav), required
+ *
+ * formatType should be a string (mp3 or wav), required
+ *
+ * price should be a number, required
+ *
+ * @param {HttpRequest} req request object
+ * @param {HttpResponse} res response object
+ * @returns json object with message and created genre
+ */
+const createSongAndDependencies = async (req, res) => {
+  const files = req.files;
+  const { user, roles } = req;
+  const {
+    artist,
+    genre,
+    title,
+    duration,
+    explicit,
+    license,
+    description,
+    published,
+    formatType,
+    price,
+  } = req.body;
+  const likes = 0, shares = 0, purchases = 0, streams = 0;
+  let coverArt = "";
+  let format = "";
+
+  if (!user || !roles) {
+    return res.status(401).json({ result: null, message: "Unauthorized" });
+  }
+  if (!artist || !genre || !title || !duration || !explicit || !license || !description || !published || !formatType || !price) {
+    return res.status(400).json({ result: null, message: "Missing inputs" });
+  }
+
+  // Handle file uploads
+  Object.keys(files).forEach((key) => {
+    const filepath = path.join(__dirname, "..", "database", "userFiles", "audio", files[key].name);
+    // check if file is an image or audio file
+    if (key === "coverArt") {
+      coverArt = filepath;
+    } else if (key === "format") {
+      format = filepath;
+    }
+
+    files[key].mv(filepath, (err) => {
+      if (err) return res.status(500).json({ status: "error", message: err });
+    });
+  });
+
+  try {
+    const Artist = await artistModel.findOne({ username: artist }).exec();
+    if (!Artist) {
+      return res.status(400).json({ result: null, message: "Invalid artist" });
+    }
+    let Genre = await genreModel.findOne({ name: genre }).exec();
+    if (!Genre) {
+      // create genre if it doesn't exist
+      const newGenre = await genreModel.create({ name: genre });
+      Genre = newGenre;
+    }
+
+    // check if song with same artist and title and description already exists
+    const existingSong = await songModel.findOne({ artist: Artist._id, title, description }).exec();
+    if(existingSong) {
+      return res.status(400).json({ result: null, message: "Song with same name, title, and description already exists" });
+    }
+
+    // create song
+    const song = await songModel.create({
+      artist: Artist._id,
+      genre: Genre._id,
+      title,
+      duration,
+      explicit,
+      license,
+      description,
+      published,
+      coverArt
+    });
+
+    // create format
+    const formatObj = await formatModel.create({
+      song: song._id,
+      price,
+      type: formatType,
+      preview: format,
+      source: format
+    });
+
+    // create song listing
+    const listing = await listingModel.create({
+      creator: Artist._id,
+      song: song._id,
+      formats: [formatObj._id]
+    });
+
+    // add song to artist's songs
+    Artist.songs.unshift(song);
+    const updatedArtist = await Artist.save();
+
+    // add song to genre's songs
+    Genre.songs.unshift(song);
+    const updatedGenre = await Genre.save();
+
+    return res.status(200).json({ result: song, message: "Success" });
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ result: null, message: "Error creating Song" });
+  }
+};
+
+/**
  * Takes request with song artist, genre, title, duration,
- * explicit, license, description, published, coverArt url 
+ * explicit, license, description, published, coverArt url
  * and updates the song with passed parameters,
  * if the new artist is different, it adds the song to the new
- * artist's songs, removes from old artist's songs, and 
- * if the new genre is different, it adds it to the songs associated with the 
+ * artist's songs, removes from old artist's songs, and
+ * if the new genre is different, it adds it to the songs associated with the
  * newly passed genre, removes from old genre's songs
  * and returns song object updated.
  *
@@ -230,9 +394,9 @@ const createSong = async (req, res) => {
  *  "coverArt": String,
  * }
  * ```
- * 
+ *
  * songId should be the object id of the song to update as a String, required
- * 
+ *
  * artist and genre should be object ids in String format, required
  *
  * title, license, and description should be Strings, required
@@ -287,34 +451,45 @@ const updateSong = async (req, res) => {
     }
 
     // ensure user is admin or artist of song being edited
-    const {user, roles} = req;
-    if(!user || !roles) {
-      return res.status(401).json({result: null, message: "Unauthorized"});
+    const { user, roles } = req;
+    if (!user || !roles) {
+      return res.status(401).json({ result: null, message: "Unauthorized" });
     }
-    const User = userModel.findOne({username: user}).exec();
-    if(!User) {
-      return res.status(401).json({result: null, message: "Invalid user, unauthorized"});
+    const User = userModel.findOne({ username: user }).exec();
+    if (!User) {
+      return res
+        .status(401)
+        .json({ result: null, message: "Invalid user, unauthorized" });
     }
-    if(!(await canAccess(user, roles, songId))) {
-      return res.status(401).json({result: null, message: "Unauthorized, you may not edit this song"});
+    if (!(await canAccess(user, roles, songId))) {
+      return res
+        .status(401)
+        .json({
+          result: null,
+          message: "Unauthorized, you may not edit this song",
+        });
     }
 
-    // if artist is different, remove song from old artist's songs and 
+    // if artist is different, remove song from old artist's songs and
     // add to new artist's songs
     if (songToUpdate.artist.toString() !== artist) {
       const oldArtist = await artistModel.findById(songToUpdate.artist).exec();
-      oldArtist.songs = oldArtist.songs.filter(song => song.toString() !== songId);
+      oldArtist.songs = oldArtist.songs.filter(
+        (song) => song.toString() !== songId
+      );
       await oldArtist.save();
       const newArtist = await artistModel.findById(artist).exec();
       newArtist.songs.unshift(songId);
       await newArtist.save();
     }
 
-    // if genre is different, remove song from old genre's songs and 
+    // if genre is different, remove song from old genre's songs and
     // add to new genre's songs
     if (songToUpdate.genre.toString() !== genre) {
       const oldGenre = await genreModel.findById(songToUpdate.genre).exec();
-      oldGenre.songs = oldGenre.songs.filter(song => song.toString() !== songId);
+      oldGenre.songs = oldGenre.songs.filter(
+        (song) => song.toString() !== songId
+      );
       await oldGenre.save();
       const newGenre = await genreModel.findById(genre).exec();
       newGenre.songs.unshift(songId);
@@ -358,15 +533,15 @@ const updateSong = async (req, res) => {
  *  "streams": Number
  * }
  * ```
- * 
+ *
  * songId should be the object id of the song to update as a String, required
- * 
+ *
  * likes should be the number of likes to increment by for the song as a Number, required
- * 
+ *
  * shares should be the number of shares to increment by for the song as a Number, required
- * 
+ *
  * purchases should be the number of purchases to increment by for the song as a Number, required
- * 
+ *
  * streams should be the number of streams to increment by for the song as a Number, required
  *
  * @param {HttpRequest} req request object
@@ -376,28 +551,35 @@ const updateSong = async (req, res) => {
 const updateSongProperties = async (req, res) => {
   const { user, roles } = req;
   const { songId } = req.body;
-  let {
-    likes,
-    shares,
-    purchases,
-    streams,
-  } = req.body;
-  if(!user || !roles) {
-    return res.status(401).json({result: null, message: "Unauthorized"});
+  let { likes, shares, purchases, streams } = req.body;
+  if (!user || !roles) {
+    return res.status(401).json({ result: null, message: "Unauthorized" });
   }
   if (!songId || (!likes && !shares && !purchases && !streams)) {
-    return res.status(400).json({ result: null, message: "Invalid request inputs." });
+    return res
+      .status(400)
+      .json({ result: null, message: "Invalid request inputs." });
   }
-  if(!likes) likes = 0;
-  if(!shares) shares = 0;
-  if(!purchases) purchases = 0;
-  if(!streams) streams = 0;
+  if (!likes) likes = 0;
+  if (!shares) shares = 0;
+  if (!purchases) purchases = 0;
+  if (!streams) streams = 0;
 
-  if(likes < 0 || shares < 0 || purchases < 0 || streams < 0) {
-    return res.status(400).json({ result: null, message: "Invalid request inputs. Negative values not allowed." });
+  if (likes < 0 || shares < 0 || purchases < 0 || streams < 0) {
+    return res
+      .status(400)
+      .json({
+        result: null,
+        message: "Invalid request inputs. Negative values not allowed.",
+      });
   }
-  if(likes > 100 || shares > 100 || purchases > 100 || streams > 100) {
-    return res.status(400).json({ result: null, message: "Invalid request inputs. Too many increments!" });
+  if (likes > 100 || shares > 100 || purchases > 100 || streams > 100) {
+    return res
+      .status(400)
+      .json({
+        result: null,
+        message: "Invalid request inputs. Too many increments!",
+      });
   }
 
   try {
@@ -477,7 +659,7 @@ const deleteSong = async (req, res) => {
 
 /**
  * Checks if a user can access a song to modify it
- * 
+ *
  * @param {String} username username of the user trying to access this resource
  * @param {[String]} roles roles of the user trying to access this resource
  * @param {String} songId id of the song to access
@@ -511,6 +693,7 @@ module.exports = {
   getSongs,
   getSong,
   createSong,
+  createSongAndDependencies,
   updateSong,
   updateSongProperties,
   deleteSong,
