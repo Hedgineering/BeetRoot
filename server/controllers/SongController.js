@@ -348,7 +348,7 @@ const createSongAndDependencies = async (req, res) => {
     });
 
     // create song listing
-    const listing = await listingModel.create({
+    const listing = await listedSongModel.create({
       creator: Artist._id,
       song: song._id,
       formats: [formatObj._id]

@@ -1,6 +1,7 @@
 // =========================
 // Pre-Config for .env file
 // =========================
+const fs = require("fs");
 const path = require("path");
 const rootDir = path.resolve(__dirname, ".");
 const env = require("dotenv").config({ path: `${rootDir}/.env` }).parsed;
@@ -238,6 +239,38 @@ app.use("/register", require("./routes/Register"));
 app.use("/login", require("./routes/Login"));
 app.use("/refresh", require("./routes/Refresh"));
 app.use("/logout", require("./routes/Logout"));
+app.get("/stream/:filename", async (req, res) => {
+  const { filename } = req.params;
+  const file = path.join(__dirname, "database", "userFiles", "audio", filename);
+
+  if (!fs.existsSync(file)) {
+    return res.status(404).json({ status: "error", message: "File not found" });
+  }
+
+  const {range} = req.headers;
+  if(!range) {
+    return res.status(400).json({ status: "error", message: "Range header not found" });
+  }
+
+  const stat = fs.statSync(file);
+  const total = stat.size;
+  const parts = range.replace(/bytes=/, "").split("-");
+  const partialStart = parts[0];
+  const partialEnd = parts[1];
+
+  const start = parseInt(partialStart, 10);
+  const end = partialEnd ? parseInt(partialEnd, 10) : total - 1;
+  const chunksize = end - start + 1;
+  const rstream = fs.createReadStream(file, { start: start, end: end });
+
+  res.writeHead(206, {
+    "Content-Range": "bytes " + start + "-" + end + "/" + total,
+    "Accept-Ranges": "bytes",
+    "Content-Length": chunksize,
+    "Content-Type": "audio/mpeg",
+  });
+  rstream.pipe(res);
+});
 
 // Protected Endpoints -------------
 // middleware to verify JWT token, 

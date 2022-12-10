@@ -8,6 +8,7 @@ const filesPayloadExists = require("../../middleware/FilesPayloadExists");
 const fileExtLimiter = require("../../middleware/FileExtLimiter");
 const fileSizeLimiter = require("../../middleware/FileSizeLimiter");
 const { 
+  streamSong,
   getSongs, 
   getSong, 
   createSong, 
