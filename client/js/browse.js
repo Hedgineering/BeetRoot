@@ -6,6 +6,15 @@
 //   });
 // });
 
+// place holder code for when the backend is implemented
+
+// songs = fetch("/api/song", {
+//   method: "POST",
+//   mode: "cors",
+// });
+
+// search functionality using url search parameters (wip)
+
 // load data from api, dummy data for now
 
 songs = [
