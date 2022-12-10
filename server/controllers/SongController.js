@@ -343,15 +343,31 @@ const updateSong = async (req, res) => {
 };
 
 /**
- * Takes request with Song id and songs to insert and returns Song object updated
+ * Takes request with songId and values for
+ * likes, shares, purchases, and streams that will be
+ * added to the song's current values. Returns the updated
+ * song object.
  *
  * Expects:
  * ```json
- * { "id": String, "songs": [String] }
+ * {
+ *  "songId": String,
+ *  "likes": Number,
+ *  "shares": Number,
+ *  "purchases": Number,
+ *  "streams": Number
+ * }
  * ```
- * id is required, with id being the object id of the Song to update in String format
- *
- * songs is required, with songs being an array of song ids in String format
+ * 
+ * songId should be the object id of the song to update as a String, required
+ * 
+ * likes should be the number of likes to increment by for the song as a Number, required
+ * 
+ * shares should be the number of shares to increment by for the song as a Number, required
+ * 
+ * purchases should be the number of purchases to increment by for the song as a Number, required
+ * 
+ * streams should be the number of streams to increment by for the song as a Number, required
  *
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
@@ -359,40 +375,34 @@ const updateSong = async (req, res) => {
  */
 const updateSongProperties = async (req, res) => {
   const { user, roles } = req;
-  const {
-    songId,
-    artist,
-    genre,
-    title,
-    duration,
-    explicit,
-    license,
-    description,
-    published,
-    coverArt,
+  const { songId } = req.body;
+  let {
     likes,
     shares,
     purchases,
     streams,
   } = req.body;
-  const properties = {
-    artist,
-    genre,
-    title,
-    duration,
-    explicit,
-    license,
-    description,
-    published,
-    coverArt,
-    likes,
-    shares,
-    purchases,
-    streams,
-  };
+  if(!user || !roles) {
+    return res.status(401).json({result: null, message: "Unauthorized"});
+  }
+  if (!songId || (!likes && !shares && !purchases && !streams)) {
+    return res.status(400).json({ result: null, message: "Invalid request inputs." });
+  }
+  if(!likes) likes = 0;
+  if(!shares) shares = 0;
+  if(!purchases) purchases = 0;
+  if(!streams) streams = 0;
+
+  if(likes < 0 || shares < 0 || purchases < 0 || streams < 0) {
+    return res.status(400).json({ result: null, message: "Invalid request inputs. Negative values not allowed." });
+  }
+  if(likes > 100 || shares > 100 || purchases > 100 || streams > 100) {
+    return res.status(400).json({ result: null, message: "Invalid request inputs. Too many increments!" });
+  }
+
   try {
-    const SongToUpdate = await songModel.findById(songId).exec();
-    if (!SongToUpdate) {
+    const songToUpdate = await songModel.findById(songId).exec();
+    if (!songToUpdate) {
       return res
         .status(400)
         .json({ result: null, message: `Invalid Song id ${id}` });
@@ -400,12 +410,13 @@ const updateSongProperties = async (req, res) => {
     if (!(await canAccess(user, roles, songId))) {
       return res.status(403).json({ result: null, message: "Unauthorized" });
     }
-    for (const property in properties) {
-      if (properties[property] && property in SongToUpdate) {
-        SongToUpdate[property] = properties[property];
-      }
-    }
-    SongToUpdate.save();
+    songToUpdate.likes += likes;
+    songToUpdate.shares += shares;
+    songToUpdate.purchases += purchases;
+    songToUpdate.streams += streams;
+    const updatedSong = await songToUpdate.save();
+
+    return res.status(200).json({ result: updatedSong, message: "Success" });
   } catch (error) {
     console.log(err);
     return res
@@ -419,9 +430,9 @@ const updateSongProperties = async (req, res) => {
  *
  * Expects:
  * ```json
- * { "id": String }
+ * { "songId": String }
  * ```
- * id is required, with id being the object id of the Song to delete in String format
+ * songId is required, with id being the object id of the Song to delete in String format
  *
  * @param {HttpRequest} req request object
  * @param {HttpResponse} res response object
@@ -429,19 +440,32 @@ const updateSongProperties = async (req, res) => {
  */
 const deleteSong = async (req, res) => {
   try {
-    const { id } = req.body;
-    if (!id) {
+    const { songId } = req.body;
+    if (!songId) {
       return res
         .status(400)
         .json({ result: null, message: "Song id is required" });
     }
-    const SongToDelete = await songModel.findById(id).exec();
-    if (!SongToDelete) {
+    const songToDelete = await songModel.findById(songId).exec();
+    if (!songToDelete) {
       return res
         .status(400)
-        .json({ result: null, message: `Invalid Song id ${id}` });
+        .json({ result: null, message: `Invalid Song id ${songId}` });
     }
-    await SongModel.findByIdAndDelete(id).exec();
+
+    // remove from artist's songs
+    const artist = await artistModel.findById(songToDelete.artist).exec();
+    artist.songs = artist.songs.filter((song) => song != songId);
+    await artist.save();
+
+    // remove from genre's songs
+    const genre = await genreModel.findById(songToDelete.genre).exec();
+    genre.songs = genre.songs.filter((song) => song != songId);
+    await genre.save();
+
+    // TODO: remove from album's songs and delete formats and other files
+
+    await songModel.findByIdAndDelete(songId).exec();
     return res.status(200).json({ result: null, message: "Success" });
   } catch (err) {
     console.log(err);

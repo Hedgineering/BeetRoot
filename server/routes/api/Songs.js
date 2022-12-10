@@ -15,7 +15,7 @@ router.route("/")
   .get(getSongs)
   .post(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), createSong)
   .put(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), updateSong)
-  .patch(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), updateSongProperties)
+  .patch(updateSongProperties)
   .delete(verifyRoles(ROLES_LIST.ADMIN, ROLES_LIST.ARTIST), deleteSong);
 
 router.route("/:id")
