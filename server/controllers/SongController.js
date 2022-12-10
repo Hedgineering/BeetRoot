@@ -1,4 +1,5 @@
 "use strict";
+const path = require("path");
 
 const mongoose = require("mongoose");
 const { artistModel } = require("../models/Artist");
@@ -6,6 +7,7 @@ const { genreModel } = require("../models/Genre");
 const { userModel } = require("../models/User");
 const { songModel } = require("../models/Song");
 const { listedSongModel } = require("../models/ListedSong");
+const { formatModel } = require("../models/Format");
 const ROLES_LIST = require("../config/RolesList");
 
 /**
