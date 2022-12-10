@@ -30,7 +30,7 @@ const mongoose = require("mongoose");
 const corsOptions = require("./config/CorsOptions");
 const { logger } = require("./middleware/LogEvents");
 const errorHandler = require("./middleware/ErrorHandler");
-const { verifyJWT } = require("./middleware/VerifyJWT");
+const { verifyJWT } = require("./middleware/VerifyJwt");
 const credentials = require("./middleware/CorsCredentials");
 const connectDB = require("./config/DbConnection");
 const app = express();
@@ -245,7 +245,7 @@ app.use("/logout", require("./routes/Logout"));
 app.use(verifyJWT); // Identity has not been tampered with
 
 // app.use("/api/album", require("./routes/api/Albums"));
-// app.use("/api/artist", require("./routes/api/Artists"));
+app.use("/api/artist", require("./routes/api/Artists"));
 app.use("/api/comment", require("./routes/api/Comments")); // TODO: test this endpoint
 // app.use("/api/format", require("./routes/api/Formats"));
 app.use("/api/genre", require("./routes/api/Genres"));
@@ -256,7 +256,7 @@ app.use("/api/history", require("./routes/api/Histories")); // TODO: test this e
 // app.use("/api/purchasedsong", require("./routes/api/PurchasedSongs"));
 app.use("/api/role", require("./routes/api/Roles")); // TODO: test this endpoint
 // app.use("/api/song", require("./routes/api/Songs"));
-// app.use("/api/user", require("./routes/api/Users"));
+app.use("/api/user", require("./routes/api/Users"));
 
 // Catch all for 404
 app.all("*", (req, res) => {
