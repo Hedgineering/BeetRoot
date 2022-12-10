@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en"> <!-- dasfjalksdjfkl;asdjfl;asjkdfl;akdjsf;flk-->
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Browse</title>
+
+  <!-- Favicon Section -->
+  <link rel="apple-touch-icon" sizes="180x180" href="public/icon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="public/icon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="public/icon/favicon-16x16.png">
+  <link rel="manifest" href="public/icon/site.webmanifest">
+  <link rel="mask-icon" href="public/icon/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="public/icon/favicon.ico" type="image/x-icon" />
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="theme-color" content="#000000">
+  <!-- Favicon Section -->
+
+  <!-- Linked CSS -->
+  <link rel="stylesheet" href="./css/base.css" />
+  <link rel="stylesheet" href="./css/font-awesome.css" />
+  <link rel="stylesheet" href="./css/home.css" />
+  <!-- Linked CSS -->
+
+  <!-- Linked JS -->
+  <script src="./js/base.js" defer></script>
+  <script src="./js/browse.js" defer></script>
+  <!-- Linked JS -->
+</head>
+<body class="bg-dark">
+  <header>
+    <div class="container bg-dark">
+      <nav class="navbar navbar-expand-md navbar-dark bg-dark d-flex">
+        <a class="navbar-brand" href="#">
+          <div class="logo-content d-flex align-items-center">
+            <img src="./public/BeetRootLogoBlackWhite.svg" alt="BeetRoot Logo" class="logo" />
+            <span class="logo-content__text navbar-text d-inline-block m-auto">BeetRoot</span>
+          </div>
+        </a>
+        <button 
+          class="navbar-toggler" 
+          type="button" 
+          data-bs-toggle="collapse" 
+          data-bs-target="#navbarSupportedContent" 
+          aria-controls="navbarSupportedContent" 
+          aria-expanded="false" 
+          aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav ms-auto text-center">
+            <li class="nav-item active">
+              <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Link</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Dropdown
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <a class="dropdown-item" href="#">Action</a>
+                <a class="dropdown-item" href="#">Another action</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="#">Something else here</a>
+              </div>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link disabled" href="#">Disabled</a>
+            </li>
+          </ul>
+        </div>
+      </nav> 
+    </div>
+  </header>
+  <main class="min-vh-100 text-bg-dark px-5">
+    <div class="row">
+        <div class="col-md-5">
+            <img class="img-fluid" src="https://unsplash.it/400/400">
+        </div>
+        <div class="col-md-7">
+            <h1 id="song-name" class="title">Song Name</h1>
+            <h3 id="artist" class="">Artist</h3>
+            <div class="row mt-6">
+                <div class="dropdown col-md-6">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Dropdown button
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                      <a class="dropdown-item" href="#">Action</a>
+                      <a class="dropdown-item" href="#">Another action</a>
+                      <a class="dropdown-item" href="#">Something else here</a>
+                    </div>
+                </div>
+                <p class="col-md-6 h3">
+                    Price: $0.00
+                </p>
+            </div>
+            <div class="mt-4 mb-4 container-fluid"> 
+                Preview Player
+            </div>
+            <div>
+                <p class="h5 d-inline-block" style="padding-right: 45px"> Shares: xx</p>
+                <p class="h5 d-inline-block" style="padding-right: 45px"> Purchases: xx</p>
+                <p class="h5 d-inline-block" style="padding-right: 45px"> Streams: xx</p>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-5">
+        <div class="col text-center">
+            <button class="py-2 px-4">
+                Add To Cart
+            </button>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <p class="h3">Comments</p>
+    </div>
+    <div class="row mt-4">
+        <div class="container text-light p-4" style="border-radius: 5px; background: gray">
+            <div class="row mb-3"> 
+                <div class="col">
+                  <div class="d-flex flex-start">
+                    <img class="rounded-circle shadow-1-strong me-3"
+                      src="https://unsplash.it/65/65" alt="avatar" width="65"
+                      height="65" />
+                    <div class="flex-grow-1 flex-shrink-1">
+                      <div>
+                        <div class="d-flex justify-content-between align-items-center">
+                          <p class="mb-1">
+                            Example User <span class="small">- 2 hours ago</span>
+                          </p>
+                          <a>
+                            <span>reply</span>
+                          </a>
+                        </div>
+                        <p class="small mb-0">
+                          Example Comment text blah blah blah. 
+                        </p>
+
+                        
+            </div>
+            <!-- <div class="row">
+                <div class="col">
+                  <div class="d-flex flex-start">
+                    <img class="rounded-circle shadow-1-strong me-3"
+                      src="https://unsplash.it/65/65" alt="avatar" width="65"
+                      height="65" />
+                    <div class="flex-grow-1 flex-shrink-1">
+                      <div>
+                        <div class="d-flex justify-content-between align-items-center">
+                          <p class="mb-1">
+                            Another Example User <span class="small">- 2 hours ago</span>
+                          </p>
+                          <a>
+                            <span>reply</span>
+                          </a>
+                        </div>
+                        <p class="small mb-0">
+                           Another Example Comment text blah blah blah. 
+                        </p>
+            </div> -->
+        </div>
+    </div>
+  </main>
+  <footer>
+    <div class="container text-light">
+      <div class="row">
+        <div class="col-12">
+          <p class="text-center">&copy; 2022-2024 Hedgineering. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
+
+
+
+
+
+<!-- 
+<div class="container">
+    <div id="demo" class="carousel slide" data-ride="carousel">
+       <div class="carousel-inner">
+          <div class="carousel-item active">
+             <div class="card">
+                <div class="path">HOME / FACE <a>/ CLEANSERS</a> </div>
+                <div class="row">
+                   <div class="col-md-6 text-center align-self-center"> <img class="img-fluid" src="https://i.imgur.com/7a9V4yw.png"> </div>
+                   <div class="col-md-6 info">
+                      <div class="row title">
+                         <div class="col">
+                            <h2>Herbalism</h2>
+                         </div>
+                         <div class="col text-right"><a href="#"><i class="fa fa-heart-o"></i></a></div>
+                      </div>
+                      <p>Natural herbal wash</p>
+                      <span class="fa fa-star checked"></span> <span class="fa fa-star checked"></span> <span class="fa fa-star checked"></span> <span class="fa fa-star checked"></span> <span class="fa fa-star-half-full"></span> <span id="reviews">1590 Reviews</span> 
+                      <div class="row price">
+                         <label class="radio">
+                            <input type="radio" name="size1" value="small" checked> 
+                            <span>
+                               <div class="row"><b>1.5 oz.</b></div>
+                               <div class="row">$12.95</div>
+                               </a> 
+                            </span>
+                         </label>
+                         <label class="radio">
+                            <input type="radio" name="size1" value="large"> 
+                            <span>
+                               <div class="row"><b>4.4 oz.</b></div>
+                               <div class="row">$21.95</div>
+                               </a> 
+                            </span>
+                         </label>
+                      </div>
+                   </div>
+                </div>
+                <div class="row lower">
+                   <div class="col"> <a class="carousel-control-prev" href="#demo" data-slide="prev"><i class="fa fa-arrow-left"></i></a> <a class="carousel-control-next" href="#demo" data-slide="next"><i class="fa fa-arrow-right"></i></a> </div>
+                   <div class="col text-right align-self-center"> <button class="btn">Add to cart</button> </div>
+                </div>
+             </div>
+          </div>
+          <div class="carousel-item">
+             <div class="card">
+                <div class="path">HOME / FACE <a>/ CLEANSERS</a> </div>
+                <div class="row">
+                   <div class="col-md-6 text-center align-self-center"> <img class="img-fluid" src="https://i.imgur.com/7a9V4yw.png"> </div>
+                   <div class="col-md-6 info">
+                      <div class="row title">
+                         <div class="col">
+                            <h2>Herbalism 2</h2>
+                         </div>
+                         <div class="col text-right"><a href="#"><i class="fa fa-heart-o"></i></a></div>
+                      </div>
+                      <p>Natural herbal wash pro</p>
+                      <span class="fa fa-star checked"></span> <span class="fa fa-star checked"></span> <span class="fa fa-star checked"></span> <span class="fa fa-star checked"></span> <span class="fa fa-star-half-full"></span> <span id="reviews">1590 Reviews</span> 
+                      <div class="row price">
+                         <label class="radio">
+                            <input type="radio" name="size2" value="small"> 
+                            <span>
+                               <div class="row"><b>13.5 oz.</b></div>
+                               <div class="row">$36.95</div>
+                               </a> 
+                            </span>
+                         </label>
+                         <label class="radio">
+                            <input type="radio" name="size2" value="large" checked> 
+                            <span>
+                               <div class="row"><b>18.4 oz.</b></div>
+                               <div class="row">$61.95</div>
+                               </a> 
+                            </span>
+                         </label>
+                      </div>
+                   </div>
+                </div>
+                <div class="row lower">
+                   <div class="col"> <a class="carousel-control-prev" href="#demo" data-slide="prev"><i class="fa fa-arrow-left"></i></a> <a class="carousel-control-next" href="#demo" data-slide="next"><i class="fa fa-arrow-right"></i></a> </div>
+                   <div class="col text-right align-self-center"> <button class="btn">Add to cart</button> </div>
+                </div>
+             </div>
+          </div>
+       </div>
+    </div>
+ </div> -->
